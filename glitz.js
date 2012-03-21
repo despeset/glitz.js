@@ -1,0 +1,998 @@
+/*****************************************************************************************
+
+     glitz.js 0.1.2 - Javascript canvas animation micro-framework             
+     Copyright © 2012 Daniel Mendel Espeset (http://danielmendel.com)         
+     MIT Licence (http://www.opensource.org/licenses/mit-license.html)        
+
+******************************************************************************************/
+
+(function(scope){ 
+  
+    /**
+     * Private Utility Functions
+     * ================================================================================= */
+
+    /**
+    *  alias hasOwnProperty
+    *  @type {function}
+    *  @private
+    */
+
+     var hasOwn = Object.prototype.hasOwnProperty;
+
+    /**
+     *  makeClass - By John Resig (MIT Licensed) 
+     *  return a base function for constructors which
+     *  makes the `new` operator optional when instantiating
+     *  works via <class>.prototype.init
+     *  
+     *  @return {function(*): Object}
+     *  @private
+     *
+     */
+     
+    function makeClass(){
+      return function(args){
+        if ( this instanceof arguments.callee )
+          return typeof this.init == "function" ? this.init.apply( this, args && args.callee ? args : arguments ) : false;
+        else
+          return new arguments.callee( arguments );
+      };
+    }
+    
+    /**
+     *  Fast and simple each implimentation (faster than native forEach)
+     *
+     *  @param {(Array | Object.<number> | number)} arr Collection to enumerate OR number of iterations to perform
+     *  @param {Function} fn Function to run, passed current iteration object
+     *  @private
+     *
+     **/
+     
+    function each( arr, fn ){
+        var i = 0, u = arr && arr.length ? arr.length : arr, args, r;
+        for( i=0 ; i<u ; i++ ){
+          args = typeof arr === 'number' ? i : arr[i];
+          r = fn(args);
+          r = typeof r === 'undefined' ? true : r;
+          if( !r ) break;
+        }
+    }
+    
+    /**
+     *  Fast each implimentation for iterating over object keys
+     *
+     *  @param {Object}
+     *  @param {Function} 
+     *  @private
+     *
+     **/
+    
+    function eachProp( obj, fn ){
+      for( var attr in obj ){
+        if( hasOwn.call( obj, attr ) ){
+          fn.call( obj, attr);
+        }
+      }
+    }
+
+    /**
+     *  convert CSS color string to Array: [R,G,B,A]
+     *  based on http://www.bitstorm.org/jquery/color-animation/jquery.animate-colors.js
+     *
+     *  @param {string} color Valid CSS color, hex or rgb #FF0000 | rgba(255,0,0,1)
+     *  @returns {Array.<number>}
+     *  @private
+     *
+     **/ 
+     
+    function parseColor( color ) {
+  		var match, triplet;
+		  
+		  // catch malformed color -- shouldn't be necessary, why is this deformation happening?
+		  if( match = /^\s?[0-9]*,[0-9]*,[0-9]*/.exec( color ) ){
+		    color = 'rgba('+color+')';
+		  }
+		  
+  		// Match #aabbcc
+  		if (match = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/.exec(color)) {
+  			triplet = [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16), 1];
+
+  			// Match #abc
+  		} else if (match = /#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])/.exec(color)) {
+  			triplet = [parseInt(match[1], 16) * 17, parseInt(match[2], 16) * 17, parseInt(match[3], 16) * 17, 1];
+
+  			// Match rgb(n, n, n)
+  		} else if (match = /rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)/.exec(color)) {
+  			triplet = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), 1];
+
+  		} else if (match = /rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9\.]*)\s*\)/.exec(color)) {
+  			triplet = [parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10),parseFloat(match[4])];
+
+  			// No browser returns rgb(n%, n%, n%), so little reason to support this format.
+  		}
+  		return triplet;
+  	}
+    
+    /**
+     *  Recursively set `t`, to have all the same keys as `k`, but with the value copied from `v`.
+     *  All keys in `k` *must* exist in `v`, but not vice-versa.
+     *  
+     *  Used to initialize the `animation.from` object.
+     *
+     *  @param {object} t Target
+     *  @param {object} k Keys to set
+     *  @param {object} v Values
+     *  @private
+     *
+     **/
+    
+    function tkvDeepCopy(t, k, v){ 
+      eachProp(k, function( a ) { 
+        return typeof k[ a ] === 'object' ? tkvDeepCopy( t[ a ], k[ a ], v[ a ] ) : t[ a ] = v[ a ];
+      });
+    }
+    
+    /**
+     *  Recursively convert the non-number values in `animation.to` and `animation.from` prior to animating.
+     *  Adds support for:
+     *
+     *    - Relative value strings, such as `'+20'` or `'-500'`.
+     *    - CSS Color Strings ( using `parseColor` )
+     *
+     *  @param {object} t `animation.to`
+     *  @param {object} f `animation.from`
+     *  @private
+     **/
+        
+    function parseAnimationDSL( t, f ) {
+      eachProp( t, function( a ){
+        switch( typeof t[ a ] ){
+          case 'string': 
+            if( t[ a ].match( /^\+/ ) ) // positive relative
+              return t[ a ] = f[ a ] + parseFloat( t[ a ].replace( /^\+/, '' ) );
+            if( t[ a ].match( /^-/ ) ) // negative relative
+              return t[ a ] = f[ a ] - parseFloat( t[ a ].replace( /^\-/,'' ) );
+            if( t[ a ].match( /^(#|rgb)/ ) ){ // color val
+              t[ a ] = parseColor( t[ a ] );
+              return f[ a ] = parseColor( f[ a ] );
+            }
+            break;
+          case 'object': // recurse!
+            parseAnimationDSL( t[ a ], f[ a ] );
+            break;
+          default:
+            break;
+        }
+      });
+    }
+
+    /** Core Classes: Animation, Renderable, Engine
+     * ================================================================================= */
+     
+    /**
+     *  `animations` orchestrate the transformation of `renderable` properties over time.
+     *  @class 
+     *  @name Animation
+     *  @constructor
+     **/
+
+    var Animation = makeClass();
+
+    /**
+     *  `renderables` are the objects that get drawn *and* an array-like collection of child `renderables`
+     *  @class 
+     *  @name Renderable
+     *  @constructor
+     **/
+
+    var Renderable = makeClass();
+
+    /**
+     *  `engines` interface with individual `<canvas>` elements, run the animation loop and trigger `renderable.draw`
+     *  @class 
+     *  @name Engine
+     *  @constructor
+     **/
+
+    var Engine = makeClass();
+     
+    scope.animations = []; // HMM... for debugging?
+        
+    Animation.prototype = {
+
+      /**
+       *  Destination snapshot of target `renderable` properties
+       *  @type {object}
+       **/
+
+      to: {},
+
+      /**
+       *  Starting snapshot of target `renderable` properties
+       *  @type {object}
+       **/
+
+      from: {},
+      
+      /**
+       *  The target `renderable`
+       *  @type {Renderable}
+       **/
+
+      renderable: null,
+      
+      /**
+       *  The easing to use
+       *  @type {string}
+       **/
+
+      easing: 'easeOutQuad',
+
+      /**
+       *  The total duration in milliseconds
+       *  @type {string}
+       **/
+
+      duration: 0,
+      
+      /**
+       *  millisecond to start on or after
+       *  @type {?number}
+       **/
+
+      startAt: null,
+
+      /**
+       *  millisecond to end on or after
+       *  @type {?number}
+       **/
+
+      endAt: null,
+      
+      /**
+       *  @type {boolean}
+       **/
+
+      finished: false,
+
+      /**
+       *  fires before each frame renders.
+       *  @type {?function}
+       **/
+
+      eachFrame: null,
+      
+      /**
+       *  fires after animation completes.
+       *  @type {?function}
+       **/
+
+      done: null,
+      
+      /**
+       *  Setup the animation
+       *
+       *  @param {Renderable}
+       *  @param {object} opts Options
+       *  @returns {Animation}
+       *
+       **/
+      
+      init: function( renderable, opts ){
+      
+        var animation = this;
+        
+        animation.duration   = opts.duration || 0;
+        animation.startAt    = new Date().getTime();
+        animation.endAt      = animation.startAt + animation.duration;
+        animation.done       = opts.done || null;
+        animation.to         = opts.to || {};
+        animation.easing     = opts.easing || animation.easing;
+        animation.renderable = renderable;
+
+        // let the engine know we're starting an animation
+        hasOwn.call( animation.renderable, 'engine' ) ? animation.renderable.engine.registerAnimation() : 0;
+
+        animation.from = {};
+        tkvDeepCopy( animation.from, animation.to, renderable );
+        parseAnimationDSL( animation.to, animation.from );
+                
+        scope.animations.push( animation );
+        
+        return this;
+
+      },
+      
+      /**
+       *  Prepare `renderable` for the current frame
+       *
+       *  @returns {boolean} false if animation is determined to be over
+       *
+       **/
+      
+      step: function(){
+        
+          var animation     = this
+            , now           = new Date().getTime()
+            , frameInterval = animation.endAt - now
+            , changeRatio   = 1 / ( animation.duration / frameInterval )
+            , target        = animation.renderable
+            , to            = animation.to
+            , from          = animation.from
+            , duration      = animation.duration
+            , easing        = animation.easing
+          ;
+          
+          if( frameInterval <= 1 ){
+            animation.stop();
+            return false;
+          }
+          
+          /**
+           *  Recursively update properties on `renderable`
+           *
+           *  @param {object}
+           *  @param {object}
+           *  @param {Renderable}
+           *  @private
+           *
+           **/
+           
+          (function updateAttr( to, from, target ){ 
+            eachProp( to, function( attr ){
+              return typeof to[ attr ] === 'object' ?
+                to[ attr ] instanceof Array && to[ attr ].length === 4 ? // is a color, render to rgba string
+                  target[ attr ] = 'rgba('
+                                    + parseInt(easingLib[ easing ]( duration - frameInterval, from[ attr ][0], to[ attr ][0] - from[ attr ][0], duration ))
+                                    + ','
+                                    + parseInt(easingLib[ easing ]( duration - frameInterval, from[ attr ][1], to[ attr ][1] - from[ attr ][1], duration ))
+                                    + ','
+                                    + parseInt(easingLib[ easing ]( duration - frameInterval, from[ attr ][2], to[ attr ][2] - from[ attr ][2], duration ))
+                                    + ','
+                                    + easingLib[ easing ]( duration - frameInterval, from[ attr ][3], to[ attr ][3] - from[ attr ][3], duration )
+                                    + ')'
+                 : updateAttr( to[ attr ], from[ attr ], target[ attr ] ) // recurse
+               : target[ attr ] = easingLib[ easing ]( duration - frameInterval, from[ attr ], to[ attr ] - from[ attr ], duration );
+            });
+          })(to, from, target);
+
+          return true;
+      },
+      
+      /**
+       *  Stops and finalizes the animation
+       *  Fired when the step function determines that the animation is over
+       *
+       *  @returns {boolean}
+       *
+       **/
+       
+      stop: function(){
+        
+        var animation = this
+          , to = animation.to
+          , ren = animation.renderable
+        ;
+        
+        /**
+         *  Recursively set `animation.renderable` properties to match `animation.to`
+         *
+         *  @param {Renderable}
+         *  @param {object}
+         *  @private
+         **/
+         
+        (function copyProps( ren, to ){
+          eachProp( to, function( attr ){ 
+            return typeof to[ attr ] === 'object' ? 
+              to[ attr ] instanceof Array && to[ attr ].length === 4 ? // color
+                ren[ attr ] = 'rgba('
+                                 + parseInt(to[ attr ][0])
+                                 + ','
+                                 + parseInt(to[ attr ][1])
+                                 + ','
+                                 + parseInt(to[ attr ][2])
+                                 + ','
+                                 + parseFloat(to[ attr ][3])
+                                 + ')'
+              : copyProps( ren[ attr ], to[ attr ] ) // recurse!
+            : ren[ attr ] = to[ attr ];
+          });
+        })( ren, to );
+        
+        // trigger callback
+        if( typeof animation.done === 'function' ) animation.done.call( ren, animation );
+
+        // let the engine know we're done
+        hasOwn.call(ren, 'engine') ? ren.engine.unregisterAnimation() : 0 ;
+        
+        return animation.finished = true;
+      
+      }
+    };
+    
+    Renderable.prototype = {
+
+      /**
+       *  x position in pixels
+       *  @type {number}
+       **/
+
+      x: 0,
+
+      /**
+       *  y position in pixels
+       *  @type {number}
+       **/
+
+      y: 0,
+
+      /**
+       *  @type {number}
+       **/
+
+      scale: 1,
+
+      /**
+       *  `Engine` this renderable is a part of
+       *  @type {?Engine}
+       **/
+
+      engine: null,
+
+      /**
+       *  Just like `Array.length`
+       *  @type {number}
+       **/
+
+      length: 0,
+
+      /**
+       *  Index of this renderable in parent
+       *  @type {number}
+       **/
+      
+      _id: -1,
+      
+      /**
+       *  Current animation (if any)
+       *  @type {?Animation}
+       **/
+      
+      animation: false,
+      
+      /**
+       *  Construct the `renderable`, shallow merge extension and `renderable`
+       *
+       *  @param {object} extension
+       *
+       **/
+      
+      init: function( extension ){
+        var renderable = this
+          , extension = extension || {}
+        ;
+
+        eachProp( extension, function( attr ){ 
+          renderable[ attr ] = extension[ attr ]; 
+        });
+      },
+      
+      /**
+       *  Run right before render, sets up `ctx` transformations.
+       *  Expect to be overwritten by custom method.
+       *  By default set `ctx 0,0` to `renderable.x, renderable.y` and scale
+       *
+       *  @param {CanvasRenderingContext2D}
+       *
+       **/
+
+      setup: function( ctx ){
+        ctx.translate( this.x, this.y );
+        ctx.scale( this.scale, this.scale );
+      },
+
+      /**
+       *  Where the magic happens.
+       *
+       *  @param {CanvasRenderingContext2D}
+       *
+       **/
+
+      render: function( ctx ){
+        // ...
+      },
+      
+      /**
+       *  Just like `Array.push`
+       *  Add a child Renderable to this Renderable.
+       *
+       *  @param {Renderable}
+       *
+       **/
+
+      push: function( child ){ 
+        child.parent = this;
+        child.registerEngine( this.engine );
+        Array.prototype.push.call( this, child ); 
+        child._id = this.length-1;
+      },
+      
+      /**
+       *  Set `renderable.engine`
+       *  Recursively applied to all children.
+       *
+       *  @param {Engine}
+       *
+       **/
+
+      registerEngine: function( engine ){
+        this.engine = engine;
+        each( this, function(child){
+          child.registerEngine( engine );
+        });
+      },
+
+      /**
+       *  Remove a child from this Renderable & sync former siblings
+       *
+       *  @param {Renderable}
+       *
+       **/
+      
+      removeChild: function( removingChild ){
+        Array.prototype.splice.call( this, removingChild._id, 1);
+        each(this,function( child ){ 
+          if(child._id > removingChild._id) child._id++;
+        });
+      },
+      
+      /**
+       *  Remove this Renderable from it's parent
+       *
+       *  @returns {Renderable}
+       *
+       **/
+
+      remove: function(){
+        this.parent.removeChild( this );
+        return this;
+      },
+      
+      /**
+       *  Create a new Animation for this Renderable:
+       *
+       *    `renderable.animate({ x: '+100' });`
+       *    `renderable.animate({ x: 50 }, 500);`
+       *    `renderable.animate({ x: '-100', y: 50 }, function(){ alert( 'done!' ); });`
+       *    `renderable.animate({ background: 'rgba(255,0,0,1)' }, 1500, function(){ alert( 'done!' ); });`
+       *    `renderable.animate({ scale: 2.5, color: '#f00' }, { duration: 1500, easing: 'easeInOutBack', done: function(){ alert( 'done!' ) } });`
+       *
+       *  @param {object}
+       *  @param {?(object|number|function)}
+       *  @param {?function}
+       *
+       **/
+
+      animate: function( to, opts, done ){
+        
+        var now = new Date().getTime()
+          , conf = {}
+        ;
+        
+        if( typeof opts === 'number' ){ // opts is duration
+          conf.duration = opts;
+          conf.done = arguments[2] || function(){ };
+        }  else {
+          conf = {
+              duration: opts.duration || 250
+            , done: opts.done || function(){ }
+            , easing: opts.easing || 'easeOutQuad'
+          };
+        }              
+        
+        if( typeof opts === 'function' ){
+          conf.done = opts;
+        }
+        
+        if( typeof done === 'function' ){
+          conf.done = done;
+        }
+                
+        conf.to = to;
+        delete this.animation;
+        this.animation = new Animation( this, conf );
+      
+      },
+      
+      /**
+       *  Handles setup and rendering, bookended by `ctx.save` and `restore`.
+       *  Recursively applied to all children.
+       *
+       *  @param {CanvasRenderingContext2D}
+       *
+       **/
+
+      draw: function( ctx ){
+
+        var renderable = this
+          , ctx = ctx || renderable.engine.ctx
+          , animation = renderable.animation
+        ;
+        
+        ctx.save();
+
+        if( animation && !animation.finished ) animation.step();
+        renderable.setup( ctx );
+        renderable.render( ctx );
+        
+        each( renderable, function(child){
+          child.draw( ctx ); 
+        });
+
+        ctx.restore();
+
+      }
+
+    };
+    
+    Engine.prototype = {
+      
+      /**
+       *  `true` when there's a pending `draw`.
+       *  @type {boolean}
+       **/ 
+         
+      _dirty: true,
+
+      /**
+       *  Frames Per Second as milliseconds for `setInterval`.  Defaults to `60 fps`, to change use setter `Engine#fps`.
+       *  @type {number}
+       **/
+
+      FPS: 1000 / 60,
+
+      /**
+       *  Total animations active on this Engine.
+       *  @type {number}
+       **/
+
+      runningAnimations: 0,
+
+      /**
+       *  `<canvas>` Engine writes to.
+       *  @type {?HTMLCanvasElement}
+       **/
+
+      canvas: null,
+
+      /**
+       *  `CanvasRenderingContext2D` for active `<canvas>`
+       *  @type {?CanvasRenderingContext2D}
+       **/
+      
+      ctx: null,
+      
+      /**
+       *  Special root Renderable
+       *  @type {?Renderable}
+       **/
+       
+      layout: null,
+
+      /**
+       *  `false` when engine is idle, interval id when running animation loop.
+       *  @type {(boolean|number)}
+       **/
+
+      running: false,
+
+      /**
+       *  Initialize, setup the `layout` Renderable and begin running.
+       *
+       *  @param {HTMLCanvasElement}
+       *
+       **/
+
+      init: function( canvasElement ){
+        var engine = this;
+
+        engine.canvas = typeof window.jQuery !== 'undefined' ? jQuery(canvasElement)[0] : canvasElement;
+        engine.ctx = engine.canvas.getContext('2d');
+        
+        engine.layout = new Renderable({
+          engine: engine,
+          width: engine.canvas.width,
+          height: engine.canvas.height,
+          backgroundColor: '#fff',
+          clearFrames: true,
+          background: function( ctx ){
+
+          },
+          setup: function( ctx ){
+            ctx.fillStyle = this.backgroundColor;
+            if(this.clearFrames)
+              ctx.fillRect( -1, -1, this.width + 1, this.height + 1 ); // setup
+            this.background( ctx );
+            ctx.translate( this.x, this.y );
+            ctx.scale( this.scale, this.scale );
+          }
+        });
+
+        engine.start();
+      },
+      
+      /**
+       *  If not running, start.
+       **/
+      
+      dirty: function(){
+        if(!this._dirty){
+          this._dirty = true;
+          this.start();
+        }
+      },
+
+      clean: function(){
+        this._dirty = false;
+        this.stop();
+      },
+
+      /**
+       *  Start animation interval: call `layout.draw` every `FPS`
+       *  Stop automatically if no more `runningAnimations`
+       **/
+       
+      start: function(){
+        var engine = this;
+        if(!engine.running)
+          var pid = new Date().getTime();
+          engine.running = setInterval(function(){
+            if(engine._dirty){ 
+              engine.layout.draw(); 
+              return engine.runningAnimations < 1 ? engine.clean() : null;
+            }
+            return engine.clean();
+          }, engine.FPS);
+      },
+
+      /**
+       *  Clear animation interval, set running to false. Engine is now idle.
+       **/
+
+      stop: function(){
+        clearInterval( this.running );
+        this.running = false;
+      },
+      
+      /**
+       *  new Animations report their existence to Engine.  Start engine if idle.
+       *  @returns {boolean}
+       *
+       **/
+      
+      registerAnimation: function(){ 
+        this.runningAnimations++; 
+        this.dirty(); 
+        return true 
+      },
+
+      /**
+       *  Animations report their demise to Engine.
+       *  @returns {boolean}
+       *
+       **/
+
+      unregisterAnimation: function(){ 
+        this.runningAnimations--; return true 
+      },
+      
+      /**
+       *  Add a new renderable to the layout.  Start engine if idle.
+       *  @param {Renderable}
+       *
+       **/ 
+       
+      push: function( renderable ){ 
+        this.layout.push( renderable ); 
+        this.dirty(); 
+      },
+      
+      /**
+       *  Set the size in pixels of the canvas & layout.
+       *  @param {number} Width
+       *  @param {number} Height
+       **/
+       
+      setSize: function( w, h ){
+        var layout = this.layout
+          , canvas = this.canvas
+        ;
+        layout.width = canvas.width = w;
+        layout.height = canvas.height = h;
+      },
+
+      /**
+       *  Set the animation framerate.  Restart if running.
+       *  @param {number} fps, frames per second
+       **/
+      
+      fps: function( fps ){ 
+        this.FPS = 1000 / fps; 
+        if( this.running ){ 
+          this.stop(); 
+          this.start(); 
+        } 
+      }
+    
+    };
+
+    /**
+     *  Easing Equations Library
+     *  ============================================================================================
+     *
+     *  TERMS OF USE - EASING EQUATIONS
+     * 
+     *  Open source under the BSD License. 
+     * 
+     *  Copyright © 2001 Robert Penner
+     *  All rights reserved.
+     * 
+     *  Redistribution and use in source and binary forms, with or without modification, 
+     *  are permitted provided that the following conditions are met:
+     * 
+     *  Redistributions of source code must retain the above copyright notice, this list of 
+     *  conditions and the following disclaimer.
+     *  Redistributions in binary form must reproduce the above copyright notice, this list 
+     *  of conditions and the following disclaimer in the documentation and/or other materials 
+     *  provided with the distribution.
+     * 
+     *  Neither the name of the author nor the names of contributors may be used to endorse 
+     *  or promote products derived from this software without specific prior written permission.
+     * 
+     *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
+     *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+     *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+     *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+     *  GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED 
+     *  AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+     *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED 
+     *  OF THE POSSIBILITY OF SUCH DAMAGE. 
+     *
+     **/
+
+    var easingLib = Animation.easingLib = {
+      
+      easeInQuad: function (t, b, c, d) {
+      	return c*(t/=d)*t + b;
+      },
+      easeOutQuad: function (t, b, c, d) {
+      	return -c *(t/=d)*(t-2) + b;
+      },
+      easeInOutQuad: function (t, b, c, d) {
+      	if ((t/=d/2) < 1) return c/2*t*t + b;
+      	return -c/2 * ((--t)*(t-2) - 1) + b;
+      },
+      easeInCubic: function (t, b, c, d) {
+      	return c*(t/=d)*t*t + b;
+      },
+      easeOutCubic: function (t, b, c, d) {
+      	return c*((t=t/d-1)*t*t + 1) + b;
+      },
+      easeInOutCubic: function (t, b, c, d) {
+      	if ((t/=d/2) < 1) return c/2*t*t*t + b;
+      	return c/2*((t-=2)*t*t + 2) + b;
+      },
+      easeInQuart: function (t, b, c, d) {
+      	return c*(t/=d)*t*t*t + b;
+      },
+      easeOutQuart: function (t, b, c, d) {
+      	return -c * ((t=t/d-1)*t*t*t - 1) + b;
+      },
+      easeInOutQuart: function (t, b, c, d) {
+      	if ((t/=d/2) < 1) return c/2*t*t*t*t + b;
+      	return -c/2 * ((t-=2)*t*t*t - 2) + b;
+      },
+      easeInQuint: function (t, b, c, d) {
+      	return c*(t/=d)*t*t*t*t + b;
+      },
+      easeOutQuint: function (t, b, c, d) {
+      	return c*((t=t/d-1)*t*t*t*t + 1) + b;
+      },
+      easeInOutQuint: function (t, b, c, d) {
+      	if ((t/=d/2) < 1) return c/2*t*t*t*t*t + b;
+      	return c/2*((t-=2)*t*t*t*t + 2) + b;
+      },
+      easeInSine: function (t, b, c, d) {
+      	return -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+      },
+      easeOutSine: function (t, b, c, d) {
+      	return c * Math.sin(t/d * (Math.PI/2)) + b;
+      },
+      easeInOutSine: function (t, b, c, d) {
+      	return -c/2 * (Math.cos(Math.PI*t/d) - 1) + b;
+      },
+      easeInExpo: function (t, b, c, d) {
+      	return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;
+      },
+      easeOutExpo: function (t, b, c, d) {
+      	return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+      },
+      easeInOutExpo: function (t, b, c, d) {
+      	if (t==0) return b;
+      	if (t==d) return b+c;
+      	if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
+      	return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
+      },
+      easeInCirc: function (t, b, c, d) {
+      	return -c * (Math.sqrt(1 - (t/=d)*t) - 1) + b;
+      },
+      easeOutCirc: function (t, b, c, d) {
+      	return c * Math.sqrt(1 - (t=t/d-1)*t) + b;
+      },
+      easeInOutCirc: function (t, b, c, d) {
+      	if ((t/=d/2) < 1) return -c/2 * (Math.sqrt(1 - t*t) - 1) + b;
+      	return c/2 * (Math.sqrt(1 - (t-=2)*t) + 1) + b;
+      },
+      easeInElastic: function (t, b, c, d) {
+      	var s=1.70158;var p=0;var a=c;
+      	if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
+      	if (a < Math.abs(c)) { a=c; var s=p/4; }
+      	else var s = p/(2*Math.PI) * Math.asin (c/a);
+      	return -(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
+      },
+      easeOutElastic: function (t, b, c, d) {
+      	var s=1.70158;var p=0;var a=c;
+      	if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
+      	if (a < Math.abs(c)) { a=c; var s=p/4; }
+      	else var s = p/(2*Math.PI) * Math.asin (c/a);
+      	return a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*(2*Math.PI)/p ) + c + b;
+      },
+      easeInOutElastic: function (t, b, c, d) {
+      	var s=1.70158;var p=0;var a=c;
+      	if (t==0) return b;  if ((t/=d/2)==2) return b+c;  if (!p) p=d*(.3*1.5);
+      	if (a < Math.abs(c)) { a=c; var s=p/4; }
+      	else var s = p/(2*Math.PI) * Math.asin (c/a);
+      	if (t < 1) return -.5*(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
+      	return a*Math.pow(2,-10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )*.5 + c + b;
+      },
+      easeInBack: function (t, b, c, d, s) {
+      	if (s == undefined) s = 1.70158;
+      	return c*(t/=d)*t*((s+1)*t - s) + b;
+      },
+      easeOutBack: function (t, b, c, d, s) {
+      	if (s == undefined) s = 1.70158;
+      	return c*((t=t/d-1)*t*((s+1)*t + s) + 1) + b;
+      },
+      easeInOutBack: function (t, b, c, d, s) {
+      	if (s == undefined) s = 1.70158; 
+      	if ((t/=d/2) < 1) return c/2*(t*t*(((s*=(1.525))+1)*t - s)) + b;
+      	return c/2*((t-=2)*t*(((s*=(1.525))+1)*t + s) + 2) + b;
+      },
+      easeInBounce: function (t, b, c, d) {
+      	return c - easingLib.easeOutBounce (d-t, 0, c, d) + b;
+      },
+      easeOutBounce: function (t, b, c, d) {
+      	if ((t/=d) < (1/2.75)) {
+      		return c*(7.5625*t*t) + b;
+      	} else if (t < (2/2.75)) {
+      		return c*(7.5625*(t-=(1.5/2.75))*t + .75) + b;
+      	} else if (t < (2.5/2.75)) {
+      		return c*(7.5625*(t-=(2.25/2.75))*t + .9375) + b;
+      	} else {
+      		return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b;
+      	}
+      },
+      easeInOutBounce: function (t, b, c, d) {
+      	if (t < d/2) return easingLib.easeInBounce (t*2, 0, c, d) * .5 + b;
+      	return easingLib.easeOutBounce (t*2-d, 0, c, d) * .5 + c*.5 + b;
+      }
+    };
+
+    // Write namespace
+
+    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2' };
+    
+})(window);
