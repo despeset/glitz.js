@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+  <head>
+    <title>glitz.js example | textured spheres</title>
+    <style>
+      html, body {
+        width:  100%;
+        height: 100%;    
+        padding: 0;
+        margin: 0;    
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay">
+      
+    </div>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript" src="../glitz.js"></script>
+    <script type="text/javascript">
+      (function(){
+
+        // Utilities
+        //==========================
+
+         function getDocHeight() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+                 Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+                 Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+             );
+         };
+ 
+         function getDocWidth() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollWidth, D.documentElement.scrollWidth),
+                 Math.max(D.body.offsetWidth, D.documentElement.offsetWidth),
+                 Math.max(D.body.clientWidth, D.documentElement.clientWidth)
+             );
+         };
+
+         // Polymorphic loop function. 
+         // when `target` is a number then fn is executed `target` times.
+         // when `target` is an array, then fn is executed for each.
+         function loop( target, fn ){
+           switch( typeof target ){
+             case 'object':
+                for( var i = 0, u = target.length; i<u; i++ ){
+                  fn.call( this, target[i] );
+                }
+                break;
+             case 'number':
+                for( var i = 0; i<target; i++){
+                  fn.call( this, i );
+                }
+                break;
+             default:
+                return false;
+           }
+           return true;
+         };
+
+         // Define renderable subclasses
+         // =========================================
+
+         var renderables = {
+            /**
+             * Picture loading renderable.
+             **/
+            Pic: function(src, onload, state){
+
+              var pic = new glitz.Renderable({
+                render: function(ctx){
+                  var pic = this;
+                  var scale = pic.scale;
+                  normalizeSize();
+                  pic.engine.ctx.translate(pic.x+pic.width*0.5,pic.y+pic.height*0.5);
+                  var lw = pic.engine.ctx.lineWidth = 1/pic.engine.layout.scale;
+                  pic.engine.ctx.drawImage(pic.img,0-(pic.width*0.5),0-(pic.height*0.5),pic.width,pic.height);
+                }
+              });
+
+              function imgLoaded(){
+                normalizeSize();
+              };
+
+              function normalizeSize(){
+                if(!pic.size.w && !pic.size.h){
+                  pic.width = pic.img.width;
+                  pic.height = pic.img.height;
+                }
+                if(pic.size.w && !pic.size.h){
+                  pic.height = pic.img.height * 1/(pic.img.width / pic.size.w);
+                  pic.width = pic.size.w;
+                }
+                if(pic.size.h && !pic.size.w){
+                  pic.width = pic.img.width * 1/(pic.img.height / pic.size.h);
+                  pic.height = pic.size.h;
+                }
+              };
+
+              // load the image
+              pic.img = new Image();
+              pic.img.onload = typeof onload === 'function' 
+                             ? function(){ imgLoaded(); onload.call(pic); } 
+                             : function(){ imgLoaded(); return true };
+              pic.img.src = src || 'images/nope.jpg';
+
+              pic.size = { w: 0, h: 0 };
+              pic.width = 0;
+              pic.height = 0;
+
+              for(attr in state){
+                if(pic.hasOwnProperty(attr)){
+                  pic[attr] = state[attr];
+                }
+              }
+                          
+              return pic;
+
+            }
+            /**
+             * Sphere with gradient applied.
+             **/
+            , Moon: function(colorStops,blend){
+
+                var grad = engine.ctx.createLinearGradient(0,0,0,250);
+                loop(colorStops, function(stop){
+                  grad.addColorStop(stop[0],stop[1]);
+                });
+
+                return new glitz.Renderable({
+                   blending: blend || 'source-over',
+                   render: function( ctx ){
+                     var last = ctx.globalCompositeOperation;
+                     ctx.globalCompositeOperation = this.blending;
+                     ctx.fillStyle = grad;
+                     ctx.beginPath();
+                     ctx.arc(100,100,100,100,360);
+                     ctx.fill();
+                     ctx.closePath();
+                     ctx.globalCompositeOperation = last;
+                   }
+                 });
+              }
+            }
+         };
+
+         // Init glitz engine
+         //========================
+
+         var engine = window.engine = new glitz.Engine(document.getElementById('canvas'));
+         var Pic = glitz.Pic;
+
+         engine.setSize(getDocWidth(), getDocHeight()-5);
+         engine.layout.backgroundColor = '#111';
+
+         var setupMoonsOnLoad = function(){
+            
+            // set the BG size & pos
+            var bg = this;
+            bg.size.w = 2000;
+            bg.x = -100;
+            bg.y = -100;
+
+            var moonOpacity = 0.25;
+            
+            var moons = new glitz.Renderable({});
+            moons.push(new GradMoon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
+
+            moons.push(new GradMoon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));
+
+            moons.push(new GradMoon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
+
+            moons.push(new GradMoon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));
+
+            engine.push(moons);
+
+            engine.fps(12); // 12 fps for hand-drawn animation effect
+
+            loop(moons,function(moon){
+              var modX = (150+(Math.random()*150));
+              var modY = (150+(Math.random()*150));
+              if((Math.round(Math.random())) % 2) {
+                modX = -modX;
+                modY = -modY;
+              }
+              moon.x = (engine.canvas.width-modX)*0.5;
+              moon.y = (engine.canvas.height-modY)*0.5;
+            });
+
+            var mover = -1;
+
+            var reposition = function(to){
+              var midX = engine.canvas.width*0.5;
+              var midY = engine.canvas.height*0.5;
+              var dur = 1500;
+              var ease = 'easeInOutQuint';
+              var opt = { duration: dur, easing: ease };
+              moons[0].animate({
+                x: ((engine.canvas.width-200)*0.5)-((to.x-midX)*0.2),
+                y: ((engine.canvas.height-300)*0.5)-((to.y-midY)*0.25)
+              },opt);
+              moons[1].animate({
+                x: ((engine.canvas.width-200)*0.5)-((to.x-midX)*0.4),
+                y: ((engine.canvas.height-200)*0.5)-((to.y-midY)*0.3)
+              },opt);
+              moons[2].animate({
+                x: ((engine.canvas.width-220)*0.5)+((to.x-midX)*0.1),
+                y: ((engine.canvas.height-200)*0.5)+((to.y-midY)*0.25)
+              },opt);
+              moons[3].animate({
+                x: ((engine.canvas.width-170)*0.5)+((to.x-midX)*0.3),
+                y: ((engine.canvas.height-240)*0.5)+((to.y-midY)*0.45)
+              },opt);
+              engine.layout[0].animate({
+                x: (-200)+((to.x-midX)*0.2),
+                y: (-100)+((to.y-midY)*0.1)
+              },opt);
+            };
+
+            window.onmousemove = function(e){
+              clearTimeout(mover);
+              mover = setTimeout(function(){
+                reposition({ x: e.clientX, y: e.clientY });
+              }, 5);
+            };
+         };
+         
+         var bg = new Pic('images/cloud.jpg', setupMoonsOnLoad);
+         engine.push(bg);
+
+      })();
+
+    </script>
+  </body>
+</html>

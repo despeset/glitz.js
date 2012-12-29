@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+  <head>
+    <title>glitz.js example | points & lines</title>
+    <style>
+      html, body {
+        width:  100%;
+        height: 100%;    
+        padding: 0;
+        margin: 0;    
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript" src="../glitz.js"></script>
+    <script type="text/javascript">
+
+      (function(){
+
+         // Utilities
+         //==========================
+
+         function getDocHeight() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+                 Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+                 Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+             );
+         };
+ 
+         function getDocWidth() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollWidth, D.documentElement.scrollWidth),
+                 Math.max(D.body.offsetWidth, D.documentElement.offsetWidth),
+                 Math.max(D.body.clientWidth, D.documentElement.clientWidth)
+             );
+         };
+
+         function loop( target, fn ){
+           switch( typeof target ){
+             case 'object':
+                for( var i = 0, u = target.length; i<u; i++ ){
+                  fn.call( this, target[i] );
+                }
+                break;
+             case 'number':
+                for( var i = 0; i<target; i++){
+                  fn.call( this, i );
+                }
+                break;
+             default:
+                return false;
+           }
+           return true;
+         }
+
+         // Setup
+         //========================
+
+         var engine = window.engine = new glitz.Engine(document.getElementById('canvas'));
+         
+         engine.setSize(getDocWidth(), getDocHeight()-5);
+         engine.layout.backgroundColor = '#222';
+         
+         engine.fps(60);
+         
+         var clientX = getDocWidth()*0.5, clientY = getDocHeight()*0.5;
+         var moveDelay = 1;
+         var gen = function(i){
+            setTimeout(function(){
+                var red = glitz.Renderable({
+                  x: clientX+(-10+(Math.random()*20)),
+                  y: clientY+(-10+(Math.random()*20)),
+                  connect: 0,
+                  pair: this,
+                  alpha: 0.5,
+                  color: [Math.floor(100+Math.random()*155),Math.floor(100+Math.random()*155),Math.floor(100+Math.random()*155)],
+                  color: [255,255,255],
+                  setup: function( ctx ){
+
+                  },
+                  render: function( ctx ){
+                    var self = this;
+                    var curDiff = {
+                      x: self.x > self.pair.x ? self.x-self.pair.x : self.pair.x-self.x,
+                      y: self.y > self.pair.y ? self.y-self.pair.y : self.pair.y-self.y
+                    };
+                    loop(engine.layout,function(sibling){
+                      if(sibling !== self){
+                        var sibDiff = {
+                          x: self.x > sibling.x ? self.x-sibling.x : sibling.x-self.x,
+                          y: self.y > sibling.y ? self.y-sibling.y : sibling.y-self.y
+                        };
+                        if( sibDiff.x < curDiff.x && sibDiff.y < curDiff.y ){
+                          self.pair = sibling;
+                          curDiff = sibDiff;
+                        }
+                      }
+                    });
+                    ctx.fillStyle = 'rgba('+this.color.join(',')+','+this.alpha.toString().replace(/^([0-9.]{4}).*$/,'$1')+')';
+                    if( curDiff.x < 100 && curDiff.y < 100 ){
+                      ctx.strokeStyle = 'rgba('+this.color.join(',')+','+this.alpha.toString().replace(/^([0-9.]{4}).*$/,'$1')+')';
+                      ctx.beginPath();
+                      ctx.moveTo( this.x, this.y );
+
+                      var p = {
+                        x: this.pair.x - curDiff.x,
+                        y: this.pair.y - curDiff.y
+                      };
+
+                      ctx.lineTo( this.x, this.y );
+
+                      ctx.arcTo( this.x, this.y, this.pair.x, this.pair.y, 1 );
+
+                      if( Math.floor(this.connect) > 0){
+                        var i = Math.floor(this.connect)
+                          , pt = this.pair;
+                        while(i--){
+                          ctx.moveTo( this.x, this.y );
+                          ctx.lineTo( pt.x, pt.y );
+                          pt = pt.pair;
+                        }
+                      }
+                      ctx.closePath();                     
+                      ctx.stroke();
+                    }
+                    ctx.fillRect( this.x, this.y, 2, 2 );
+                  }
+               });
+
+              engine.push(red);
+
+              red.pair = red._id > 0 ? engine.layout[red._id-1] : red;
+
+              var maxConnect = Math.ceil(Math.random()*10) >= 5 ? 5 : 0 ;
+
+              (function runRed(){
+                  var goTo = { x: 0, y:0 };
+                  goTo.x = red.x < clientX && clientX-red.x > 200 ? '+'+Math.random()*(clientX-red.x)
+                         : red.x > clientX && red.x-clientX > 200 ? '-'+Math.random()*(red.x-clientX)
+                           : ['-','+','-'][Math.floor(Math.random()*2)]+Math.random()*500;
+
+                  goTo.y = red.y < clientY && clientY-red.y > 200 ? '+'+Math.random()*(clientY-red.y)
+                         : red.y > clientY && red.y-clientY > 200 ? '-'+Math.random()*(red.y-clientY)
+                           : ['-','+','-'][Math.floor(Math.random()*2)]+Math.random()*500;
+
+                  red.animate(goTo, { duration: 5000 }, function(){
+                    red.animate({ connect: maxConnect },{ duration: 1000 },function(){
+                      setTimeout(function(){ 
+                        red.animate({ connect: 0, alpha: maxConnect ? 0 : 0.5 },{ duration: 1500 },function(){
+                          red.alpha = 0.5;
+                          runRed();
+                        });
+                      }, 1500);
+                    });
+                  });
+              })();
+
+           }, ( 1 * i ) + 1 );
+        };
+         
+         loop( 250, gen );
+
+         moveDelay = 1500;
+
+         // Mouse controls
+         //========================
+         var clone = -1;
+         window.onmousemove = function( e ){
+           clientX = ( e.clientX - engine.layout.x ) * ( 1 / engine.layout.scale );
+           clientY = ( e.clientY - engine.layout.y ) * ( 1 / engine.layout.scale );
+         };
+          
+      })();
+
+    </script>
+  </body>
+</html>
