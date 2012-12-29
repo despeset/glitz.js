@@ -1,43 +1,38 @@
-`glitz.js` is a bare-bones, small and fast micro-framework for running 2D canvas animations.  It is designed for when a simple animation or special effect is neede, but for which a more complete ( and heavier ) animation stack might be overkill.
+`glitz.js` is a bare-bones, small and fast micro-framework for running 2D canvas animations.  It is designed for cases where a simple animation or special effect is called for, but where a more complete ( and heavier ) animation solution is overkill.
 
-No dependencies.
-----------------
+* **No dependencies.**
 
- `glitz.js` is plain `javascript`.  That said, if you are using `jQuery`
- you can still start a `glitz.Engine` like this:
+ `glitz.js` is vanilla `javascript`.  That said, if you are using `jQuery`
+ you can start a `glitz.Engine` like this:
 
-     var engine = new glitz.Engine( $('canvas#myCanvas') );
+            var engine = new glitz.Engine( $('canvas#myCanvas') );
 
-Pretty Small.
-----------------
+* **Pretty Small.**
 
  Minified, `glitz.js` weighs in at `8.1KB ( 2.5KB gzip )`.  Even so, a quarter of 
  that size is the 30 built-in easing algorithms.  Where maximum thinness is required, remove any unused easing equasions.
 
-Well mannered.
-----------------
+* **Well mannered.**
 
- Unless there's an animation in progress, `glitz.Engine` is %100 idle.  The main animation
+ Unless there's an animation in progress, `glitz.Engine` is 100% idle.  The main animation
  loop and subsequent render calls are event-driven, so when there's nothing to do it *does nothing*.
 
-Control your FPS.
----------
+* **Control your FPS.**
 
- Glitz uses a render loop that allows for a configurable `FPS`, crucial to achieving subtle film & traditional animation effects:
+ Glitz uses a render loop that allows for a configurable `FPS`, crucial for achieving subtle film & traditional animation effects:
 
      var engine = new glitz.Engine( document.getElementById( 'myCanvas' )); 
      engine.fps( 24 );
  
 
 USAGE
-======================================================================================================
-  --------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
   `glitz.js` is made up of three Classes, accessed via the global namespace `glitz`  
   ( note: glitz is still < 1.0, the API may be subject to rapid change )
     
 glitz.Engine
----------
+=========
 
   `glitz.Engine` instances are initalized on the `<canvas>` tag and control the timing of an animation, store all the associated `renderables` and internally orchestrate the draw loops and framerate.  Initialize an `Engine` by passing it an `HTMLCanvasElement`.
     
@@ -53,7 +48,7 @@ glitz.Engine
       engine.layout.backgroundColor = '#f00;'
   
 glitz.Renderable
-------------
+=========
 
   `glitz.Renderable` is a base class for any kind of drawable object.  Just give it a set of properties, and a `render` method.
   
@@ -100,7 +95,7 @@ glitz.Renderable
       square.engine;        // engine
 
 glitz.Animation
--------------
+=========
 
   `glitz.Animation` instances are not usually created explicitly, but instead are handled under the hood by `renderable.animate`
   
@@ -114,7 +109,7 @@ glitz.Animation
   
       square.animate({ x: '+10', y: '-10' }, 500 );
       
-  `Animation` has access to 30 built-in easing equations
+  `Animation` has access to 30 built-in easing equations ported from Robert Penner's [`Easing Equations Library for ActionScript`](http://www.robertpenner.com/easing/)
 
       square.animate({ width: '+50' }, { easing: 'easeInOutBounce', duration: 750 });
   
