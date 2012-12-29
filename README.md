@@ -1,4 +1,4 @@
-`glitz.js` is a bare-bones, small and fast micro-framework for running 2D canvas animations.
+`glitz.js` is a bare-bones, small and fast micro-framework for running 2D canvas animations.  It is designed for when a simple animation or special effect is neede, but for which a more complete ( and heavier ) animation stack might be overkill.
 
 No dependencies.
 ----------------
@@ -11,32 +11,21 @@ No dependencies.
 Pretty Small.
 ----------------
 
- Minified, `glitz.js` weighs in at `8.1KB` and once gzipped is just `2.5KB`.  Even so, a quarter of 
- that size is the 30 built-in easing algorithms.  If compiled with 4 easings, it drops
- to `5.4KB` or `2KB` gzipped.
+ Minified, `glitz.js` weighs in at `8.1KB ( 2.5KB gzip )`.  Even so, a quarter of 
+ that size is the 30 built-in easing algorithms.  Where maximum thinness is required, remove any unused easing equasions.
 
 Well mannered.
 ----------------
 
- Unless there's an animation in progress, `glitz.Engine` is completely idle.  The main animation
+ Unless there's an animation in progress, `glitz.Engine` is %100 idle.  The main animation
  loop and subsequent render calls are event-driven, so when there's nothing to do it *does nothing*.
 
-Real FPS.
+Control your FPS.
 ---------
 
- The timing of `setInterval` and `setTimeout` is inconsistent
- at the best of times.  Animation that relies on them often feels
- chunky and worse, will crawl to a stop if performance lag drastically 
- lowers the framerate.  
-
- `glitz.js` animations are internally timed by millisecond durations,
- so even if redraw rates drop to 3 FPS, your animation will still 
- complete at the expected speed.
-
- Of course, you can always set the `FPS` yourself:
+ Glitz uses a render loop that allows for a configurable `FPS`, crucial to achieving subtle film & traditional animation effects:
 
      var engine = new glitz.Engine( document.getElementById( 'myCanvas' )); 
-     // 60 fps by default
      engine.fps( 24 );
  
 
@@ -45,7 +34,7 @@ USAGE
   --------------------------------------------------------------------------------------------------
 
   `glitz.js` is made up of three Classes, accessed via the global namespace `glitz`  
-  ( Please note that we're still early in development so the API is definitely subject to change. )
+  ( note: glitz is still < 1.0, the API may be subject to rapid change )
     
 glitz.Engine
 ---------
@@ -117,11 +106,11 @@ glitz.Animation
   
       square.animate({ height: 50 }, 750 );
 
-  In addition to any custom properties, `Renderables` have the built-in properties `x`, `y,` and `scale`, all of which are *automatically* applied as `transformations` to the `engine.ctx` matrix before `renerable.render`, and thusly affect all their children
+  In addition to any custom properties, `Renderables` expose the spacial components `x`, `y,` and `scale`, all of which are applied as `transformations` to the `engine.ctx` matrix before `renerable.render`, affecting all descendent renderables.
 
       square.animate({ x: 10, y: 25, scale: 0.8 }, 500 );
       
-  You can animate properties with relative transformations
+  You can also animate properties with relative transformations
   
       square.animate({ x: '+10', y: '-10' }, 500 );
       
@@ -145,7 +134,7 @@ glitz.Animation
         }});
       });
       
-  Finally, `glitz.Animation` can be used directly to animate the properties of any object.  The target object properties are set every time `animation.step` is called.
+  Finally, `glitz.Animation` can be used independantly to animate the properties of any object.  The target object properties are set every time `animation.step` is called.
   
       var foo = { bar: 0 };
       var anim = new glitz.Animation( foo, { to: { bar: '+50' }, duration: 1500 });
