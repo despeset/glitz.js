@@ -1,8 +1,19 @@
 /*****************************************************************************************
 
-     glitz.js 0.1.2 - Javascript canvas animation micro-framework             
-     Copyright © 2012 Daniel Mendel Espeset (http://danielmendel.com)         
-     MIT Licence (http://www.opensource.org/licenses/mit-license.html)        
+     glitz.js 0.1.2 - Javascript canvas animation micro-framework  
+     http://github.com/danielmendel/glitz.js
+
+     Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         
+     MIT Licence ( http://github.com/danielmendel/glitz.js/license.txt )        
+
+     Includes a port of Robert Penner's Easing Equations Library for ActionScript:
+
+       Easing Equations v1.5
+       May 1, 2003
+       (c) 2003 Robert Penner, all rights reserved. 
+       Easing Equations are subject to the terms in http://www.robertpenner.com/easing_terms_of_use.html.  
+
+     CSS sring to color conversion based on  http://www.bitstorm.org/jquery/color-animation/jquery.animate-colors.js
 
 ******************************************************************************************/
 
