@@ -991,7 +991,7 @@
       }
     };
 
-    // Write namespace
+    // Write to the namespace
 
     scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2' };
     
