@@ -145,8 +145,7 @@
                    }
                  });
               }
-            }
-         };
+            };
 
          // Init glitz engine
          //========================
@@ -168,13 +167,13 @@
             var moonOpacity = 0.25;
             
             var moons = new glitz.Renderable({});
-            moons.push(new GradMoon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
+            moons.push(new renderables.Moon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
 
-            moons.push(new GradMoon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));
+            moons.push(new renderables.Moon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));
 
-            moons.push(new GradMoon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
+            moons.push(new renderables.Moon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
 
-            moons.push(new GradMoon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));
+            moons.push(new renderables.Moon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));
 
             engine.push(moons);
 
@@ -229,7 +228,7 @@
             };
          };
          
-         var bg = new Pic('images/cloud.jpg', setupMoonsOnLoad);
+         var bg = new renderables.Pic('images/cloud.jpg', setupMoonsOnLoad);
          engine.push(bg);
 
       })();
