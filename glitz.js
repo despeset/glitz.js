@@ -1,6 +1,6 @@
 /*****************************************************************************************
 
-     glitz.js 0.1.3 - Javascript canvas animation micro-framework  
+     glitz.js 0.1.4 - Javascript canvas animation micro-framework  
      http://github.com/danielmendel/glitz.js
 
      Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         

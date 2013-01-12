@@ -9,7 +9,7 @@
 
 * **Pretty Small.**
 
- Minified, `glitz.js` weighs in at `8.5KB ( 2.7KB gzip )`.  Even so, a quarter of 
+ Minified, `glitz.js` weighs in at `9KB ( 2.9KB gzip )`.  Even so, a quarter of 
  that size is the 30 built-in easing algorithms.  Where maximum thinness is required, remove any unused easing equasions.
 
 * **Well mannered.**
