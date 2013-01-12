@@ -15,7 +15,38 @@
 
      CSS sring to color conversion based on  http://www.bitstorm.org/jquery/color-animation/jquery.animate-colors.js
 
+     requestAnimationFrame polyfill by Erik MË†ller + fixes from Paul Irish and Tino Zijdel. ( trimmed down for glitz by Daniel Mendel Espeset )
+
 ******************************************************************************************/
+
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+// requestAnimationFrame polyfill by Erik MË†ller
+// fixes from Paul Irish and Tino Zijdel
+// unused behaviors removed by Daniel Mendel Espeset
+(function() {
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame  = window[vendors[x]+'CancelAnimationFrame'] 
+                                    || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+    
+    // NOOP instead of setTimeout fallback -- we already running our anim loop that way
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(){ };
+
+    /**
+     *  This isn't being used, let's keep it out of the build.
+
+        if (!window.cancelAnimationFrame)
+            window.cancelAnimationFrame = function(id) {
+                clearTimeout(id);
+            };
+
+     **/
+
+}());
 
 (function(scope){ 
   
@@ -310,7 +341,7 @@
         parseAnimationDSL( animation.to, animation.from );
                 
         scope.animations.push( animation );
-        
+
         return this;
 
       },
@@ -731,6 +762,36 @@
           }
         });
 
+        /**
+         *  requestAnimationFrame play & pause control
+         * 
+         *  requestAnimationFrame is only fired by the browser when
+         *  the page is visible.  setTimeout & setInterval both run 
+         *  regardless of page visibility.
+         *
+         *  We're still using an interval for our draw loop ( for now )
+         *  But this is a simple methodology for adding that functionality
+         *  so that the engine stops running automatically 
+         *  when the browser pane is hidden.
+         *
+         **/
+
+        var reqAnimFrameTimer = -1;
+        var animFramePaused = false;
+        requestAnimationFrame(function playOnFrame(){
+          if( animFramePaused ){
+              engine.start();
+              animFramePaused = false;
+          }
+          clearTimeout(reqAnimFrameTimer);
+          reqAnimFrameTimer = setTimeout(function(){
+            animFramePaused = true;
+            engine.stop();
+          }, 100);
+          webkitRequestAnimationFrame(playOnFrame);
+        });
+        
+        // start the engine automatically
         engine.start();
       },
       

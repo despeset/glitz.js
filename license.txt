@@ -10,6 +10,8 @@ Includes a port of Robert Penner's Easing Equations Library for ActionScript:
 
 CSS sring to color conversion based on  http://www.bitstorm.org/jquery/color-animation/jquery.animate-colors.js
 
+requestAnimationFrame polyfill by Erik MË†ller + fixes from Paul Irish and Tino Zijdel. ( trimmed down for glitz by Daniel Mendel Espeset )
+
 gliz.js is released under the MIT License
 
 Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         
