@@ -32,7 +32,7 @@
                                     || window[vendors[x]+'CancelRequestAnimationFrame'];
     }
     
-    // NOOP instead of setTimeout fallback -- we already running our anim loop that way
+    // NOOP instead of setTimeout fallback -- we're already running our anim loop that way
     if (!window.requestAnimationFrame)
         window.requestAnimationFrame = function(){ };
 
