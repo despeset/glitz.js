@@ -92,12 +92,10 @@
      **/
      
     function each( arr, fn ){
-        var i = 0, u = arr && arr.length ? arr.length : arr, args, r;
+        var i = 0, u = arr && arr.length ? arr.length : arr, r;
         for( i=0 ; i<u ; i++ ){
-          args = typeof arr === 'number' ? i : arr[i];
-          r = fn(args);
-          r = typeof r === 'undefined' ? true : r;
-          if( !r ) break;
+          r = fn( typeof arr === 'number' ? i : arr[i] )
+          if( !( typeof r === 'undefined' ? true : r) ) break
         }
     }
     
