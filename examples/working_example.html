@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+  <head>
+    <title>glitz.js example | </title>
+    <style>
+      html, body {
+        width:  100%;
+        height: 100%;    
+        padding: 0;
+        margin: 0;    
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript" src="../glitz.js"></script>
+    <script type="text/javascript">
+      !function(){
+
+         // Utilities
+         // ==========================
+
+         function getDocHeight() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+                 Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+                 Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+             );
+         };
+ 
+         function getDocWidth() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollWidth, D.documentElement.scrollWidth),
+                 Math.max(D.body.offsetWidth, D.documentElement.offsetWidth),
+                 Math.max(D.body.clientWidth, D.documentElement.clientWidth)
+             );
+         };
+
+         function loop( target, fn ){
+           switch( typeof target ){
+             case 'object':
+                for( var i = 0, u = target.length; i<u; i++ ){
+                  fn.call( this, target[i] );
+                }
+                break;
+             case 'number':
+                for( var i = 0; i<target; i++){
+                  fn.call( this, i );
+                }
+                break;
+             default:
+                return false;
+           }
+           return true;
+         }
+
+         // Setup
+         // ========================
+
+         var engine = window.engine = new glitz.Engine(document.getElementById('canvas'));         
+         engine.setSize(getDocWidth(), getDocHeight());
+         engine.layout.backgroundColor = '#222';         
+         engine.fps(60);
+
+         // Mouse controls
+         // ========================
+         var clientX = getDocWidth()*0.5, clientY = getDocHeight()*0.5;
+         window.onmousemove = function( e ){
+           clientX = ( e.clientX - engine.layout.x ) * ( 1 / engine.layout.scale );
+           clientY = ( e.clientY - engine.layout.y ) * ( 1 / engine.layout.scale );
+         };
+
+         // Renderables
+         // ========================
+         var Dot = function(){ 
+          return new glitz.Renderable({
+            x: parseInt( Math.random() * getDocWidth() )
+          , y: parseInt( Math.random() * getDocHeight() )
+          , rot: parseInt( Math.random() * 360 ) * Math.PI / 180
+          , render: function( ctx ){
+              ctx.beginPath();
+              ctx.rotate(this.rot);
+              ctx.lineTo(2,0);
+              ctx.lineTo(2,10);
+              ctx.lineTo(0,10);
+              ctx.fill();
+              ctx.closePath();
+            }
+          })
+         };
+
+         var dots = new glitz.Renderable({
+          render: function( ctx ){
+            ctx.fillStyle = '#f00';
+          }
+         });
+
+         engine.push( dots );
+
+         var startTime = new Date().getTime();
+         var _start = engine.start;
+         window.firedA = window.firedB = window.firedC = 0;
+         engine.start = function(){ 
+            firedA++;
+            // startTime = new Date().getTime();
+            return _start.apply( this, arguments );
+         }
+
+         var _stop = engine.start;
+         engine.stop = function(){ 
+            firedB++;
+            // console.log( new Date().getTime() - startTime );
+            return _stop.apply( this, arguments );
+         }
+
+         var _draw = engine.layout.draw;
+         engine.layout.draw = function(){
+            firedC++;
+            // console.log( new Date().getTime() - startTime );
+            return _draw.apply( this, arguments );            
+         }
+
+         var i = 500;
+         while(i--){
+           dots.push( new Dot() );
+         }
+
+      }();
+    </script>
+  </body>
+</html>
