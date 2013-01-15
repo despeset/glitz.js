@@ -807,7 +807,7 @@
       },
 
       clean: function(){
-        if(this.dirty){
+        if(this._dirty){
           this._dirty = false;
           this.stop();
         }
