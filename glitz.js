@@ -83,6 +83,7 @@
     
     /**
      *  Fast and simple each implimentation (faster than native forEach)
+     *  Return false in `fn` to break the loop
      *
      *  @param {(Array | Object.<number> | number)} arr Collection to enumerate OR number of iterations to perform
      *  @param {Function} fn Function to run, passed current iteration object
@@ -109,9 +110,8 @@
     
     function eachProp( obj, fn ){
       for( var attr in obj ){
-        if( hasOwn.call( obj, attr ) ){
+        if( hasOwn.call( obj, attr ) )
           fn.call( obj, attr)
-        }
       }
     }
 
