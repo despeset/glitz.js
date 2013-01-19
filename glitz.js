@@ -33,8 +33,7 @@
     }
     
     // NOOP instead of setTimeout fallback -- we're already running our anim loop that way
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(){ }
+    window.requestAnimationFrame = window.requestAnimationFrame || function(){}
 
     /**
      *  This isn't being used, let's keep it out of the build.
