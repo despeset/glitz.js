@@ -1,0 +1,205 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Glitz.js by danielmendel</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Glitz.js</h1>
+        <p>glitz.js is a small and fast micro-framework for running simple HTML5 canvas animations.</p>
+
+        <p class="view"><a href="https://github.com/danielmendel/glitz.js">View the Project on GitHub <small>danielmendel/glitz.js</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/danielmendel/glitz.js/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/danielmendel/glitz.js/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/danielmendel/glitz.js">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p><code>glitz.js</code> is a bare-bones, small and fast micro-framework for running 2D canvas animations.  It is designed for cases where a simple animation or special effect is called for, but where a more complete ( and heavier ) animation solution is overkill.</p>
+
+<ul>
+<li>
+<p><strong>No dependencies.</strong></p>
+
+<p><code>glitz.js</code> is vanilla <code>javascript</code>.  That said, if you are using <code>jQuery</code>
+you can start a <code>glitz.Engine</code> like this:</p>
+
+<pre><code>    var engine = new glitz.Engine( $('canvas#myCanvas') );
+</code></pre>
+</li>
+<li>
+<p><strong>Pretty Small.</strong></p>
+
+<p>Minified, <code>glitz.js</code> weighs in at <code>9KB ( 2.9KB gzip )</code>.  Even so, a quarter of 
+that size is the 30 built-in easing algorithms.  Where maximum thinness is required, remove any unused easing equasions.</p>
+</li>
+<li>
+<p><strong>Well mannered.</strong></p>
+
+<p>Unless there's an animation in progress, <code>glitz.Engine</code> is 100% idle.  The main animation
+loop and subsequent render calls are event-driven, so when there's nothing to do it <em>does nothing</em>.</p>
+</li>
+<li>
+<p><strong>Control your FPS.</strong></p>
+
+<p>Glitz uses a render loop that allows for a configurable <code>FPS</code>, crucial for achieving subtle film &amp; traditional animation effects:</p>
+
+<p>var engine = new glitz.Engine( document.getElementById( 'myCanvas' )); 
+ engine.fps( 24 );</p>
+</li>
+</ul><h2>USAGE</h2>
+
+<p><code>glitz.js</code> is made up of three Classes, accessed via the global namespace <code>glitz</code><br>
+  ( note: glitz is still &lt; 1.0, the API may be subject to rapid change )</p>
+
+<h1>glitz.Engine</h1>
+
+<p><code>glitz.Engine</code> instances are initalized on the <code>&lt;canvas&gt;</code> tag and control the timing of an animation, store all the associated <code>renderables</code> and internally orchestrate the draw loops and framerate.  Initialize an <code>Engine</code> by passing it an <code>HTMLCanvasElement</code>.</p>
+
+<pre><code>  var engine = new glitz.Engine( document.getElementById( 'myCanvas' ));
+</code></pre>
+
+<p><code>engines</code> expose some configuration methods</p>
+
+<pre><code>  engine.fps( 24 );
+  engine.setSize( 500, 500 );
+</code></pre>
+
+<p>and include a special <code>Renderable</code> called <code>layout</code></p>
+
+<pre><code>  engine.layout.backgroundColor = '#f00;'
+</code></pre>
+
+<h1>glitz.Renderable</h1>
+
+<p><code>glitz.Renderable</code> is a base class for any kind of drawable object.  Just give it a set of properties, and a <code>render</code> method.</p>
+
+<pre><code>  var square = new glitz.Renderable({
+      height: 100
+    , width:  100
+    , color: '#0f0'
+    , render: function( ctx ){
+        ctx.fillStyle = this.color;
+        ctx.fillRect( 0, 0, this.width, this.height );
+    }
+  });
+</code></pre>
+
+<p>Then add it to the engine's layout</p>
+
+<pre><code>  engine.layout.push( square );
+</code></pre>
+
+<p>This means that <code>square</code> is now a child of the <code>layout</code> <code>Renderable</code>. All <code>Renderables</code> can have children</p>
+
+<pre><code>  var triangle = new glitz.Renderable({
+      height: 100
+    , width:  100
+    , color: '#0f0'
+    , render: function( ctx ){
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo( 0, this.height );
+        ctx.lineTo( this.width, this.height );
+        ctx.lineTo( this.width * .5, 0 );
+        ctx.lineTo( 0, this.height );
+        ctx.fill();
+        ctx.closePath();
+    }
+  });
+  square.push( triangle );
+</code></pre>
+
+<p>In this capacity, <code>Renderables</code> act just like <code>Array</code>. Walking the tree is easy.</p>
+
+<pre><code>  square.length;        // 1
+  square[0];            // triangle
+  engine.layout[0][0];  // triangle
+  triangle.parent;      // square
+  square.parent;        // layout
+  square.engine;        // engine
+</code></pre>
+
+<h1>glitz.Animation</h1>
+
+<p><code>glitz.Animation</code> instances are not usually created explicitly, but instead are handled under the hood by <code>renderable.animate</code></p>
+
+<pre><code>  square.animate({ height: 50 }, 750 );
+</code></pre>
+
+<p>In addition to any custom properties, <code>Renderables</code> expose the spacial components <code>x</code>, <code>y,</code> and <code>scale</code>, all of which are applied as <code>transformations</code> to the <code>engine.ctx</code> matrix before <code>renerable.render</code>, affecting all descendent renderables.</p>
+
+<pre><code>  square.animate({ x: 10, y: 25, scale: 0.8 }, 500 );
+</code></pre>
+
+<p>You can also animate properties with relative transformations</p>
+
+<pre><code>  square.animate({ x: '+10', y: '-10' }, 500 );
+</code></pre>
+
+<p><code>Animation</code> has access to 30 built-in easing equations ported from Robert Penner's <a href="http://www.robertpenner.com/easing/"><code>Easing Equations Library for ActionScript</code></a></p>
+
+<pre><code>  square.animate({ width: '+50' }, { easing: 'easeInOutBounce', duration: 750 });
+</code></pre>
+
+<p>and can tween colors</p>
+
+<pre><code>  square.animate({ color: '#00f' }, 1500 );
+  triangle.animate({ color: 'rgba(150,200,100,0.8)' }, 750 );
+</code></pre>
+
+<p>Right now, animations are not automatically queued and cannot be run in parallel on a single <code>renderable</code> --
+  each call to <code>renderable.animate</code> will cancel any running <code>Animation</code> and start the new one immediately.
+  Instead, pass a callback as the third parameter or as an option:</p>
+
+<pre><code>  square.animate({ width: '-25' }, 500, function(){
+    // or as an option
+    triangle.animate({ height: '+25' }, { duration: 500, done: function(){ 
+      // done!
+    }});
+  });
+</code></pre>
+
+<p>Finally, <code>glitz.Animation</code> can be used independantly to animate the properties of any object.  The target object properties are set every time <code>animation.step</code> is called.</p>
+
+<pre><code>  var foo = { bar: 0 };
+  var anim = new glitz.Animation( foo, { to: { bar: '+50' }, duration: 1500 });
+
+  setTimeout(function(){
+    anim.step(); // true
+    console.log(foo.bar); // 27.8222
+  }, 500 );
+
+  setTimeout(function(){
+    anim.step(); // true
+    console.log(foo.bar); // 44.46664444444445
+  }, 1000 );
+
+  setTimeout(function(){
+    anim.step(); // false, animation is done.
+    console.log(foo.bar); // 50
+  }, 1600 );
+</code></pre>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/danielmendel">danielmendel</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
