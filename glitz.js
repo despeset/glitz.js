@@ -774,22 +774,18 @@
          **/
 
         var reqAnimFrameTimer = -1
-        var animFramePaused = false
         requestAnimationFrame(function playOnFrame(){
-          if( animFramePaused ){
+          if( reqAnimFrameTimer < 0 ){
               engine.start()
-              animFramePaused = false
           }
           clearTimeout(reqAnimFrameTimer)
           reqAnimFrameTimer = setTimeout(function(){
-            animFramePaused = true
+            reqAnimFrameTimer = -1
             engine.stop()
           }, 100)
           webkitRequestAnimationFrame(playOnFrame)
         })
         
-        // start the engine automatically
-        engine.start()
       },
       
       /**
