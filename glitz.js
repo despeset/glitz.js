@@ -1,6 +1,6 @@
 /*****************************************************************************************
 
-     glitz.js 0.1.4 - Javascript canvas animation micro-framework  
+     glitz.js 0.1.5 - Javascript canvas animation micro-framework  
      http://github.com/danielmendel/glitz.js
 
      Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         
@@ -24,6 +24,8 @@
 // requestAnimationFrame polyfill by Erik MË†ller
 // fixes from Paul Irish and Tino Zijdel
 // unused behaviors removed by Daniel Mendel Espeset
+
+// ! lets us both execute our function expression & serves to close any previous context: https://gist.github.com/533f4d52e58e59ca9ecd
 !function() {
     var vendors = ['ms', 'moz', 'webkit', 'o']
     for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
@@ -814,7 +816,6 @@
       start: function(){
         var engine = this
         if(!engine.running)
-          var pid = new Date().getTime()
           engine.running = setInterval(function(){
             if(engine._dirty){ 
               engine.layout.draw()
