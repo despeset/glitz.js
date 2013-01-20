@@ -24,31 +24,32 @@
 // requestAnimationFrame polyfill by Erik MË†ller
 // fixes from Paul Irish and Tino Zijdel
 // unused behaviors removed by Daniel Mendel Espeset
-(function() {
-    var vendors = ['ms', 'moz', 'webkit', 'o'];
+
+// ! lets us both execute our function expression & serves to close any previous context: https://gist.github.com/533f4d52e58e59ca9ecd
+!function() {
+    var vendors = ['ms', 'moz', 'webkit', 'o']
     for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-        window.cancelAnimationFrame  = window[vendors[x]+'CancelAnimationFrame'] 
-                                    || window[vendors[x]+'CancelRequestAnimationFrame'];
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame']
+        // window.cancelAnimationFrame  = window[vendors[x]+'CancelAnimationFrame'] 
+        //                             || window[vendors[x]+'CancelRequestAnimationFrame']
     }
     
-    // NOOP instead of setTimeout fallback -- we already running our anim loop that way
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(){ };
+    // NOOP instead of setTimeout fallback -- we're already running our anim loop that way
+    window.requestAnimationFrame = window.requestAnimationFrame || function(){}
 
     /**
      *  This isn't being used, let's keep it out of the build.
 
         if (!window.cancelAnimationFrame)
             window.cancelAnimationFrame = function(id) {
-                clearTimeout(id);
-            };
+                clearTimeout(id)
+            }
 
      **/
 
-}());
+}()
 
-(function(scope){ 
+!function(scope){ 
   
     /**
      * Private Utility Functions
@@ -60,7 +61,7 @@
     *  @private
     */
 
-     var hasOwn = Object.prototype.hasOwnProperty;
+     var hasOwn = Object.prototype.hasOwnProperty
 
     /**
      *  makeClass - By John Resig (MIT Licensed) 
@@ -76,14 +77,15 @@
     function makeClass(){
       return function(args){
         if ( this instanceof arguments.callee )
-          return typeof this.init == "function" ? this.init.apply( this, args && args.callee ? args : arguments ) : false;
+          return typeof this.init == "function" ? this.init.apply( this, args && args.callee ? args : arguments ) : false
         else
-          return new arguments.callee( arguments );
-      };
+          return new arguments.callee( arguments )
+      }
     }
     
     /**
      *  Fast and simple each implimentation (faster than native forEach)
+     *  Return false in `fn` to break the loop
      *
      *  @param {(Array | Object.<number> | number)} arr Collection to enumerate OR number of iterations to perform
      *  @param {Function} fn Function to run, passed current iteration object
@@ -92,12 +94,10 @@
      **/
      
     function each( arr, fn ){
-        var i = 0, u = arr && arr.length ? arr.length : arr, args, r;
+        var i = 0, u = arr && arr.length ? arr.length : arr, r
         for( i=0 ; i<u ; i++ ){
-          args = typeof arr === 'number' ? i : arr[i];
-          r = fn(args);
-          r = typeof r === 'undefined' ? true : r;
-          if( !r ) break;
+          r = fn( typeof arr === 'number' ? i : arr[i] )
+          if( !( typeof r === 'undefined' ? true : r) ) break
         }
     }
     
@@ -112,9 +112,8 @@
     
     function eachProp( obj, fn ){
       for( var attr in obj ){
-        if( hasOwn.call( obj, attr ) ){
-          fn.call( obj, attr);
-        }
+        if( hasOwn.call( obj, attr ) )
+          fn.call( obj, attr)
       }
     }
 
@@ -129,32 +128,32 @@
      **/ 
      
     function parseColor( color ) {
-  		var match, triplet;
-		  
-		  // catch malformed color -- shouldn't be necessary, why is this deformation happening?
-		  if( match = /^\s?[0-9]*,[0-9]*,[0-9]*/.exec( color ) ){
-		    color = 'rgba('+color+')';
-		  }
-		  
-  		// Match #aabbcc
-  		if (match = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/.exec(color)) {
-  			triplet = [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16), 1];
+      var match, triplet
+      
+      // catch malformed color -- shouldn't be necessary, why is this deformation happening?
+      if( match = /^\s?[0-9]*,[0-9]*,[0-9]*/.exec( color ) ){
+        color = 'rgba('+color+')'
+      }
+      
+      // Match #aabbcc
+      if (match = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/.exec(color)) {
+        triplet = [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16), 1]
 
-  			// Match #abc
-  		} else if (match = /#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])/.exec(color)) {
-  			triplet = [parseInt(match[1], 16) * 17, parseInt(match[2], 16) * 17, parseInt(match[3], 16) * 17, 1];
+        // Match #abc
+      } else if (match = /#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])/.exec(color)) {
+        triplet = [parseInt(match[1], 16) * 17, parseInt(match[2], 16) * 17, parseInt(match[3], 16) * 17, 1]
 
-  			// Match rgb(n, n, n)
-  		} else if (match = /rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)/.exec(color)) {
-  			triplet = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), 1];
+        // Match rgb(n, n, n)
+      } else if (match = /rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)/.exec(color)) {
+        triplet = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), 1]
 
-  		} else if (match = /rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9\.]*)\s*\)/.exec(color)) {
-  			triplet = [parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10),parseFloat(match[4])];
+      } else if (match = /rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9\.]*)\s*\)/.exec(color)) {
+        triplet = [parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10),parseFloat(match[4])]
 
-  			// No browser returns rgb(n%, n%, n%), so little reason to support this format.
-  		}
-  		return triplet;
-  	}
+        // No browser returns rgb(n%, n%, n%), so little reason to support this format.
+      }
+      return triplet
+    }
     
     /**
      *  Recursively set `t`, to have all the same keys as `k`, but with the value copied from `v`.
@@ -171,8 +170,8 @@
     
     function tkvDeepCopy(t, k, v){ 
       eachProp(k, function( a ) { 
-        return typeof k[ a ] === 'object' ? tkvDeepCopy( t[ a ], k[ a ], v[ a ] ) : t[ a ] = v[ a ];
-      });
+        return typeof k[ a ] === 'object' ? tkvDeepCopy( t[ a ], k[ a ], v[ a ] ) : t[ a ] = v[ a ]
+      })
     }
     
     /**
@@ -192,21 +191,21 @@
         switch( typeof t[ a ] ){
           case 'string': 
             if( t[ a ].match( /^\+/ ) ) // positive relative
-              return t[ a ] = f[ a ] + parseFloat( t[ a ].replace( /^\+/, '' ) );
+              return t[ a ] = f[ a ] + parseFloat( t[ a ].replace( /^\+/, '' ) )
             if( t[ a ].match( /^-/ ) ) // negative relative
-              return t[ a ] = f[ a ] - parseFloat( t[ a ].replace( /^\-/,'' ) );
+              return t[ a ] = f[ a ] - parseFloat( t[ a ].replace( /^\-/,'' ) )
             if( t[ a ].match( /^(#|rgb)/ ) ){ // color val
-              t[ a ] = parseColor( t[ a ] );
-              return f[ a ] = parseColor( f[ a ] );
+              t[ a ] = parseColor( t[ a ] )
+              return f[ a ] = parseColor( f[ a ] )
             }
-            break;
+            break
           case 'object': // recurse!
-            parseAnimationDSL( t[ a ], f[ a ] );
-            break;
+            parseAnimationDSL( t[ a ], f[ a ] )
+            break
           default:
-            break;
+            break
         }
-      });
+      })
     }
 
     /** Core Classes: Animation, Renderable, Engine
@@ -219,7 +218,7 @@
      *  @constructor
      **/
 
-    var Animation = makeClass();
+    var Animation = makeClass()
 
     /**
      *  `renderables` are the objects that get drawn *and* an array-like collection of child `renderables`
@@ -228,7 +227,7 @@
      *  @constructor
      **/
 
-    var Renderable = makeClass();
+    var Renderable = makeClass()
 
     /**
      *  `engines` interface with individual `<canvas>` elements, run the animation loop and trigger `renderable.draw`
@@ -237,7 +236,7 @@
      *  @constructor
      **/
 
-    var Engine = makeClass();
+    var Engine = makeClass()
      
     scope.animations = []; // HMM... for debugging?
         
@@ -323,26 +322,26 @@
       
       init: function( renderable, opts ){
       
-        var animation = this;
+        var animation = this
         
-        animation.duration   = opts.duration || 0;
-        animation.startAt    = new Date().getTime();
-        animation.endAt      = animation.startAt + animation.duration;
-        animation.done       = opts.done || null;
-        animation.to         = opts.to || {};
-        animation.easing     = opts.easing || animation.easing;
-        animation.renderable = renderable;
+        animation.duration   = opts.duration || 0
+        animation.startAt    = new Date().getTime()
+        animation.endAt      = animation.startAt + animation.duration
+        animation.done       = opts.done || null
+        animation.to         = opts.to || {}
+        animation.easing     = opts.easing || animation.easing
+        animation.renderable = renderable
 
         // let the engine know we're starting an animation
-        hasOwn.call( animation.renderable, 'engine' ) ? animation.renderable.engine.registerAnimation() : 0;
+        hasOwn.call( animation.renderable, 'engine' ) ? animation.renderable.engine.registerAnimation() : 0
 
-        animation.from = {};
-        tkvDeepCopy( animation.from, animation.to, renderable );
-        parseAnimationDSL( animation.to, animation.from );
+        animation.from = {}
+        tkvDeepCopy( animation.from, animation.to, renderable )
+        parseAnimationDSL( animation.to, animation.from )
                 
-        scope.animations.push( animation );
+        scope.animations.push( animation )
 
-        return this;
+        return this
 
       },
       
@@ -364,11 +363,11 @@
             , from          = animation.from
             , duration      = animation.duration
             , easing        = animation.easing
-          ;
+          
           
           if( frameInterval <= 1 ){
-            animation.stop();
-            return false;
+            animation.stop()
+            return false
           }
           
           /**
@@ -381,7 +380,7 @@
            *
            **/
            
-          (function updateAttr( to, from, target ){ 
+          !function updateAttr( to, from, target ){ 
             eachProp( to, function( attr ){
               return typeof to[ attr ] === 'object' ?
                 to[ attr ] instanceof Array && to[ attr ].length === 4 ? // is a color, render to rgba string
@@ -395,11 +394,11 @@
                                     + easingLib[ easing ]( duration - frameInterval, from[ attr ][3], to[ attr ][3] - from[ attr ][3], duration )
                                     + ')'
                  : updateAttr( to[ attr ], from[ attr ], target[ attr ] ) // recurse
-               : target[ attr ] = easingLib[ easing ]( duration - frameInterval, from[ attr ], to[ attr ] - from[ attr ], duration );
-            });
-          })(to, from, target);
+               : target[ attr ] = easingLib[ easing ]( duration - frameInterval, from[ attr ], to[ attr ] - from[ attr ], duration )
+            })
+          }(to, from, target)
 
-          return true;
+          return true
       },
       
       /**
@@ -415,7 +414,7 @@
         var animation = this
           , to = animation.to
           , ren = animation.renderable
-        ;
+        
         
         /**
          *  Recursively set `animation.renderable` properties to match `animation.to`
@@ -425,7 +424,7 @@
          *  @private
          **/
          
-        (function copyProps( ren, to ){
+        !function copyProps( ren, to ){
           eachProp( to, function( attr ){ 
             return typeof to[ attr ] === 'object' ? 
               to[ attr ] instanceof Array && to[ attr ].length === 4 ? // color
@@ -439,20 +438,20 @@
                                  + parseFloat(to[ attr ][3])
                                  + ')'
               : copyProps( ren[ attr ], to[ attr ] ) // recurse!
-            : ren[ attr ] = to[ attr ];
-          });
-        })( ren, to );
+            : ren[ attr ] = to[ attr ]
+          })
+        }( ren, to )
         
         // trigger callback
-        if( typeof animation.done === 'function' ) animation.done.call( ren, animation );
+        if( typeof animation.done === 'function' ) animation.done.call( ren, animation )
 
         // let the engine know we're done
-        hasOwn.call(ren, 'engine') ? ren.engine.unregisterAnimation() : 0 ;
+        hasOwn.call(ren, 'engine') ? ren.engine.unregisterAnimation() : 0 
         
-        return animation.finished = true;
+        return animation.finished = true
       
       }
-    };
+    }
     
     Renderable.prototype = {
 
@@ -514,11 +513,11 @@
       init: function( extension ){
         var renderable = this
           , extension = extension || {}
-        ;
+        
 
         eachProp( extension, function( attr ){ 
-          renderable[ attr ] = extension[ attr ]; 
-        });
+          renderable[ attr ] = extension[ attr ]
+        })
       },
       
       /**
@@ -531,8 +530,8 @@
        **/
 
       setup: function( ctx ){
-        ctx.translate( this.x, this.y );
-        ctx.scale( this.scale, this.scale );
+        ctx.translate( this.x, this.y )
+        ctx.scale( this.scale, this.scale )
       },
 
       /**
@@ -555,10 +554,10 @@
        **/
 
       push: function( child ){ 
-        child.parent = this;
-        child.registerEngine( this.engine );
-        Array.prototype.push.call( this, child ); 
-        child._id = this.length-1;
+        child.parent = this
+        child.registerEngine( this.engine )
+        Array.prototype.push.call( this, child )
+        child._id = this.length-1
       },
       
       /**
@@ -570,10 +569,10 @@
        **/
 
       registerEngine: function( engine ){
-        this.engine = engine;
+        this.engine = engine
         each( this, function(child){
-          child.registerEngine( engine );
-        });
+          child.registerEngine( engine )
+        })
       },
 
       /**
@@ -584,10 +583,10 @@
        **/
       
       removeChild: function( removingChild ){
-        Array.prototype.splice.call( this, removingChild._id, 1);
+        Array.prototype.splice.call( this, removingChild._id, 1)
         each(this,function( child ){ 
-          if(child._id > removingChild._id) child._id++;
-        });
+          if(child._id > removingChild._id) child._id++
+        })
       },
       
       /**
@@ -598,8 +597,8 @@
        **/
 
       remove: function(){
-        this.parent.removeChild( this );
-        return this;
+        this.parent.removeChild( this )
+        return this
       },
       
       /**
@@ -621,30 +620,30 @@
         
         var now = new Date().getTime()
           , conf = {}
-        ;
+        
         
         if( typeof opts === 'number' ){ // opts is duration
-          conf.duration = opts;
-          conf.done = arguments[2] || function(){ };
+          conf.duration = opts
+          conf.done = arguments[2] || function(){ }
         }  else {
           conf = {
               duration: opts.duration || 250
             , done: opts.done || function(){ }
             , easing: opts.easing || 'easeOutQuad'
-          };
+          }
         }              
         
         if( typeof opts === 'function' ){
-          conf.done = opts;
+          conf.done = opts
         }
         
         if( typeof done === 'function' ){
-          conf.done = done;
+          conf.done = done
         }
                 
-        conf.to = to;
-        delete this.animation;
-        this.animation = new Animation( this, conf );
+        conf.to = to
+        delete this.animation
+        this.animation = new Animation( this, conf )
       
       },
       
@@ -661,23 +660,23 @@
         var renderable = this
           , ctx = ctx || renderable.engine.ctx
           , animation = renderable.animation
-        ;
         
-        ctx.save();
+        
+        ctx.save()
 
-        if( animation && !animation.finished ) animation.step();
-        renderable.setup( ctx );
-        renderable.render( ctx );
+        if( animation && !animation.finished ) animation.step()
+        renderable.setup( ctx )
+        renderable.render( ctx )
         
         each( renderable, function(child){
-          child.draw( ctx ); 
-        });
+          child.draw( ctx )
+        })
 
-        ctx.restore();
+        ctx.restore()
 
       }
 
-    };
+    }
     
     Engine.prototype = {
       
@@ -738,10 +737,10 @@
        **/
 
       init: function( canvasElement ){
-        var engine = this;
+        var engine = this
 
-        engine.canvas = typeof window.jQuery !== 'undefined' ? jQuery(canvasElement)[0] : canvasElement;
-        engine.ctx = engine.canvas.getContext('2d');
+        engine.canvas = typeof window.jQuery !== 'undefined' ? jQuery(canvasElement)[0] : canvasElement
+        engine.ctx = engine.canvas.getContext('2d')
         
         engine.layout = new Renderable({
           engine: engine,
@@ -753,14 +752,14 @@
 
           },
           setup: function( ctx ){
-            ctx.fillStyle = this.backgroundColor;
+            ctx.fillStyle = this.backgroundColor
             if(this.clearFrames)
               ctx.fillRect( -1, -1, this.width + 1, this.height + 1 ); // setup
-            this.background( ctx );
-            ctx.translate( this.x, this.y );
-            ctx.scale( this.scale, this.scale );
+            this.background( ctx )
+            ctx.translate( this.x, this.y )
+            ctx.scale( this.scale, this.scale )
           }
-        });
+        })
 
         /**
          *  requestAnimationFrame play & pause control
@@ -776,23 +775,19 @@
          *
          **/
 
-        var reqAnimFrameTimer = -1;
-        var animFramePaused = false;
+        var reqAnimFrameTimer = -1
         requestAnimationFrame(function playOnFrame(){
-          if( animFramePaused ){
-              engine.start();
-              animFramePaused = false;
+          if( reqAnimFrameTimer < 0 ){
+              engine.start()
           }
-          clearTimeout(reqAnimFrameTimer);
+          clearTimeout(reqAnimFrameTimer)
           reqAnimFrameTimer = setTimeout(function(){
-            animFramePaused = true;
-            engine.stop();
-          }, 100);
-          webkitRequestAnimationFrame(playOnFrame);
-        });
+            reqAnimFrameTimer = -1
+            engine.stop()
+          }, 100)
+          webkitRequestAnimationFrame(playOnFrame)
+        })
         
-        // start the engine automatically
-        engine.start();
       },
       
       /**
@@ -801,15 +796,15 @@
       
       dirty: function(){
         if(!this._dirty){
-          this._dirty = true;
-          this.start();
+          this._dirty = true
+          this.start()
         }
       },
 
       clean: function(){
         if(this._dirty){
-          this._dirty = false;
-          this.stop();
+          this._dirty = false
+          this.stop()
         }
       },
 
@@ -819,16 +814,15 @@
        **/
        
       start: function(){
-        var engine = this;
+        var engine = this
         if(!engine.running)
-          var pid = new Date().getTime();
           engine.running = setInterval(function(){
             if(engine._dirty){ 
-              engine.layout.draw(); 
-              return engine.runningAnimations < 1 ? engine.clean() : null;
+              engine.layout.draw()
+              return engine.runningAnimations < 1 ? engine.clean() : null
             }
-            return engine.clean();
-          }, engine.FPS);
+            return engine.clean()
+          }, engine.FPS)
       },
 
       /**
@@ -836,8 +830,8 @@
        **/
 
       stop: function(){
-        clearInterval( this.running );
-        this.running = false;
+        clearInterval( this.running )
+        this.running = false
       },
       
       /**
@@ -847,8 +841,8 @@
        **/
       
       registerAnimation: function(){ 
-        this.runningAnimations++; 
-        this.dirty(); 
+        this.runningAnimations++
+        this.dirty()
         return true 
       },
 
@@ -869,8 +863,8 @@
        **/ 
        
       push: function( renderable ){ 
-        this.layout.push( renderable ); 
-        this.dirty(); 
+        this.layout.push( renderable )
+        this.dirty()
       },
       
       /**
@@ -882,9 +876,9 @@
       setSize: function( w, h ){
         var layout = this.layout
           , canvas = this.canvas
-        ;
-        layout.width = canvas.width = w;
-        layout.height = canvas.height = h;
+        
+        layout.width = canvas.width = w
+        layout.height = canvas.height = h
       },
 
       /**
@@ -893,14 +887,14 @@
        **/
       
       fps: function( fps ){ 
-        this.FPS = 1000 / fps; 
+        this.FPS = 1000 / fps
         if( this.running ){ 
-          this.stop(); 
-          this.start(); 
+          this.stop()
+          this.start()
         } 
       }
     
-    };
+    }
 
     /**
      *  Easing Equations Library
@@ -940,133 +934,133 @@
     var easingLib = Animation.easingLib = {
       
       easeInQuad: function (t, b, c, d) {
-      	return c*(t/=d)*t + b;
+        return c*(t/=d)*t + b
       },
       easeOutQuad: function (t, b, c, d) {
-      	return -c *(t/=d)*(t-2) + b;
+        return -c *(t/=d)*(t-2) + b
       },
       easeInOutQuad: function (t, b, c, d) {
-      	if ((t/=d/2) < 1) return c/2*t*t + b;
-      	return -c/2 * ((--t)*(t-2) - 1) + b;
+        if ((t/=d/2) < 1) return c/2*t*t + b
+        return -c/2 * ((--t)*(t-2) - 1) + b
       },
       easeInCubic: function (t, b, c, d) {
-      	return c*(t/=d)*t*t + b;
+        return c*(t/=d)*t*t + b
       },
       easeOutCubic: function (t, b, c, d) {
-      	return c*((t=t/d-1)*t*t + 1) + b;
+        return c*((t=t/d-1)*t*t + 1) + b
       },
       easeInOutCubic: function (t, b, c, d) {
-      	if ((t/=d/2) < 1) return c/2*t*t*t + b;
-      	return c/2*((t-=2)*t*t + 2) + b;
+        if ((t/=d/2) < 1) return c/2*t*t*t + b
+        return c/2*((t-=2)*t*t + 2) + b
       },
       easeInQuart: function (t, b, c, d) {
-      	return c*(t/=d)*t*t*t + b;
+        return c*(t/=d)*t*t*t + b
       },
       easeOutQuart: function (t, b, c, d) {
-      	return -c * ((t=t/d-1)*t*t*t - 1) + b;
+        return -c * ((t=t/d-1)*t*t*t - 1) + b
       },
       easeInOutQuart: function (t, b, c, d) {
-      	if ((t/=d/2) < 1) return c/2*t*t*t*t + b;
-      	return -c/2 * ((t-=2)*t*t*t - 2) + b;
+        if ((t/=d/2) < 1) return c/2*t*t*t*t + b
+        return -c/2 * ((t-=2)*t*t*t - 2) + b
       },
       easeInQuint: function (t, b, c, d) {
-      	return c*(t/=d)*t*t*t*t + b;
+        return c*(t/=d)*t*t*t*t + b
       },
       easeOutQuint: function (t, b, c, d) {
-      	return c*((t=t/d-1)*t*t*t*t + 1) + b;
+        return c*((t=t/d-1)*t*t*t*t + 1) + b
       },
       easeInOutQuint: function (t, b, c, d) {
-      	if ((t/=d/2) < 1) return c/2*t*t*t*t*t + b;
-      	return c/2*((t-=2)*t*t*t*t + 2) + b;
+        if ((t/=d/2) < 1) return c/2*t*t*t*t*t + b
+        return c/2*((t-=2)*t*t*t*t + 2) + b
       },
       easeInSine: function (t, b, c, d) {
-      	return -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+        return -c * Math.cos(t/d * (Math.PI/2)) + c + b
       },
       easeOutSine: function (t, b, c, d) {
-      	return c * Math.sin(t/d * (Math.PI/2)) + b;
+        return c * Math.sin(t/d * (Math.PI/2)) + b
       },
       easeInOutSine: function (t, b, c, d) {
-      	return -c/2 * (Math.cos(Math.PI*t/d) - 1) + b;
+        return -c/2 * (Math.cos(Math.PI*t/d) - 1) + b
       },
       easeInExpo: function (t, b, c, d) {
-      	return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;
+        return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b
       },
       easeOutExpo: function (t, b, c, d) {
-      	return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+        return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b
       },
       easeInOutExpo: function (t, b, c, d) {
-      	if (t==0) return b;
-      	if (t==d) return b+c;
-      	if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
-      	return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
+        if (t==0) return b
+        if (t==d) return b+c
+        if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b
+        return c/2 * (-Math.pow(2, -10 * --t) + 2) + b
       },
       easeInCirc: function (t, b, c, d) {
-      	return -c * (Math.sqrt(1 - (t/=d)*t) - 1) + b;
+        return -c * (Math.sqrt(1 - (t/=d)*t) - 1) + b
       },
       easeOutCirc: function (t, b, c, d) {
-      	return c * Math.sqrt(1 - (t=t/d-1)*t) + b;
+        return c * Math.sqrt(1 - (t=t/d-1)*t) + b
       },
       easeInOutCirc: function (t, b, c, d) {
-      	if ((t/=d/2) < 1) return -c/2 * (Math.sqrt(1 - t*t) - 1) + b;
-      	return c/2 * (Math.sqrt(1 - (t-=2)*t) + 1) + b;
+        if ((t/=d/2) < 1) return -c/2 * (Math.sqrt(1 - t*t) - 1) + b
+        return c/2 * (Math.sqrt(1 - (t-=2)*t) + 1) + b
       },
       easeInElastic: function (t, b, c, d) {
-      	var s=1.70158;var p=0;var a=c;
-      	if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
-      	if (a < Math.abs(c)) { a=c; var s=p/4; }
-      	else var s = p/(2*Math.PI) * Math.asin (c/a);
-      	return -(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
+        var s=1.70158;var p=0;var a=c
+        if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3
+        if (a < Math.abs(c)) { a=c; var s=p/4; }
+        else var s = p/(2*Math.PI) * Math.asin (c/a)
+        return -(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b
       },
       easeOutElastic: function (t, b, c, d) {
-      	var s=1.70158;var p=0;var a=c;
-      	if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
-      	if (a < Math.abs(c)) { a=c; var s=p/4; }
-      	else var s = p/(2*Math.PI) * Math.asin (c/a);
-      	return a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*(2*Math.PI)/p ) + c + b;
+        var s=1.70158;var p=0;var a=c
+        if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3
+        if (a < Math.abs(c)) { a=c; var s=p/4; }
+        else var s = p/(2*Math.PI) * Math.asin (c/a)
+        return a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*(2*Math.PI)/p ) + c + b
       },
       easeInOutElastic: function (t, b, c, d) {
-      	var s=1.70158;var p=0;var a=c;
-      	if (t==0) return b;  if ((t/=d/2)==2) return b+c;  if (!p) p=d*(.3*1.5);
-      	if (a < Math.abs(c)) { a=c; var s=p/4; }
-      	else var s = p/(2*Math.PI) * Math.asin (c/a);
-      	if (t < 1) return -.5*(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
-      	return a*Math.pow(2,-10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )*.5 + c + b;
+        var s=1.70158;var p=0;var a=c
+        if (t==0) return b;  if ((t/=d/2)==2) return b+c;  if (!p) p=d*(.3*1.5)
+        if (a < Math.abs(c)) { a=c; var s=p/4; }
+        else var s = p/(2*Math.PI) * Math.asin (c/a)
+        if (t < 1) return -.5*(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b
+        return a*Math.pow(2,-10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )*.5 + c + b
       },
       easeInBack: function (t, b, c, d, s) {
-      	if (s == undefined) s = 1.70158;
-      	return c*(t/=d)*t*((s+1)*t - s) + b;
+        if (s == undefined) s = 1.70158
+        return c*(t/=d)*t*((s+1)*t - s) + b
       },
       easeOutBack: function (t, b, c, d, s) {
-      	if (s == undefined) s = 1.70158;
-      	return c*((t=t/d-1)*t*((s+1)*t + s) + 1) + b;
+        if (s == undefined) s = 1.70158
+        return c*((t=t/d-1)*t*((s+1)*t + s) + 1) + b
       },
       easeInOutBack: function (t, b, c, d, s) {
-      	if (s == undefined) s = 1.70158; 
-      	if ((t/=d/2) < 1) return c/2*(t*t*(((s*=(1.525))+1)*t - s)) + b;
-      	return c/2*((t-=2)*t*(((s*=(1.525))+1)*t + s) + 2) + b;
+        if (s == undefined) s = 1.70158
+        if ((t/=d/2) < 1) return c/2*(t*t*(((s*=(1.525))+1)*t - s)) + b
+        return c/2*((t-=2)*t*(((s*=(1.525))+1)*t + s) + 2) + b
       },
       easeInBounce: function (t, b, c, d) {
-      	return c - easingLib.easeOutBounce (d-t, 0, c, d) + b;
+        return c - easingLib.easeOutBounce (d-t, 0, c, d) + b
       },
       easeOutBounce: function (t, b, c, d) {
-      	if ((t/=d) < (1/2.75)) {
-      		return c*(7.5625*t*t) + b;
-      	} else if (t < (2/2.75)) {
-      		return c*(7.5625*(t-=(1.5/2.75))*t + .75) + b;
-      	} else if (t < (2.5/2.75)) {
-      		return c*(7.5625*(t-=(2.25/2.75))*t + .9375) + b;
-      	} else {
-      		return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b;
-      	}
+        if ((t/=d) < (1/2.75)) {
+          return c*(7.5625*t*t) + b
+        } else if (t < (2/2.75)) {
+          return c*(7.5625*(t-=(1.5/2.75))*t + .75) + b
+        } else if (t < (2.5/2.75)) {
+          return c*(7.5625*(t-=(2.25/2.75))*t + .9375) + b
+        } else {
+          return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b
+        }
       },
       easeInOutBounce: function (t, b, c, d) {
-      	if (t < d/2) return easingLib.easeInBounce (t*2, 0, c, d) * .5 + b;
-      	return easingLib.easeOutBounce (t*2-d, 0, c, d) * .5 + c*.5 + b;
+        if (t < d/2) return easingLib.easeInBounce (t*2, 0, c, d) * .5 + b
+        return easingLib.easeOutBounce (t*2-d, 0, c, d) * .5 + c*.5 + b
       }
-    };
+    }
 
     // Write to the namespace
 
-    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2' };
+    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2' }
     
-})(window);
+}(window);
