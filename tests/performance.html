@@ -1,0 +1,305 @@
+<!doctype html>
+<html>
+  <head>
+    <title>glitz.js example | </title>
+    <style>
+      html, body {
+        width:  100%;
+        height: 100%;    
+        padding: 0;
+        margin: 0;    
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript" src="../glitz.js"></script>
+    <script type="text/javascript" src="../vendor/benchmark.js"></script>
+    <script type="text/javascript">
+      !function(){
+
+         // Utilities
+         // ==========================
+
+         function getDocHeight( noMemo ) {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+                 Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+                 Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+             );
+         };
+ 
+         function getDocWidth( noMemo ) {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollWidth, D.documentElement.scrollWidth),
+                 Math.max(D.body.offsetWidth, D.documentElement.offsetWidth),
+                 Math.max(D.body.clientWidth, D.documentElement.clientWidth)
+             );
+         };
+
+         function loop( target, fn ){
+           switch( typeof target ){
+             case 'object':
+                for( var i = 0, u = target.length; i<u; i++ ){
+                  fn.call( this, target[i] );
+                }
+                break;
+             case 'number':
+                for( var i = 0; i<target; i++){
+                  fn.call( this, i );
+                }
+                break;
+             default:
+                return false;
+           }
+           return true;
+         }
+
+         // Setup
+         // ========================
+
+         var engine = window.engine = new glitz.Engine(document.getElementById('canvas'));         
+         engine.setSize(getDocWidth(), getDocHeight());
+         engine.layout.backgroundColor = '#333';         
+         engine.fps(60);
+
+         // Mouse controls
+         // ========================
+         var clientX = getDocWidth()*0.5, clientY = getDocHeight()*0.5;
+         window.onmousemove = function( e ){
+           clientX = ( e.clientX - engine.layout.x ) * ( 1 / engine.layout.scale );
+           clientY = ( e.clientY - engine.layout.y ) * ( 1 / engine.layout.scale );
+         };
+
+         // Renderables
+         // ========================
+         var Dot = function(){ 
+          return new glitz.Renderable({
+            x: parseInt( Math.random() * engine.canvas.width )
+          , y: parseInt( Math.random() * engine.canvas.height )
+          // , rot: parseInt( Math.random() * 360 ) * Math.PI / 180
+          , render: function( ctx ){
+              // ctx.rotate(this.rot);
+              // ctx.lineTo(2,0);
+              // ctx.lineTo(2,2);
+              // ctx.lineTo(0,2);
+          	  // ctx.beginPath();
+              ctx.fillRect(0,0,1,1);
+          	  // ctx.closePath();
+            }
+          })
+         };
+
+         var dots = window.dots = new glitz.Renderable({
+          render: function( ctx ){
+            ctx.fillStyle = '#f99';
+          }
+         });
+
+         engine.push( dots );
+
+         // Instrument some glitz.js functions to count executions.
+         // Accessible through `window.execCount`
+         // ========================
+
+         function instrument( obj, key, patch ){
+         	var supper = obj[key]; // super is reserved: http://stackoverflow.com/a/147776/464772
+         	obj[key] = function(){ var scope = this, args = arguments; return patch(function(){ supper.apply( scope, args ) }) }
+         	obj[key].fix = function(){ obj[key] = supper };
+         }
+
+         // var execCount = window.execCount = { start: 0, stop: 0, draw: 0 }
+         // instrument( engine, 'start', function( supper ){
+         // 	execCount.start++;
+         // 	return supper();
+         // });
+         // instrument( engine, 'stop', function( supper ){
+         // 	execCount.stop++;
+         // 	return supper();
+         // });
+         // instrument( engine.layout, 'draw', function( supper ){
+         // 	execCount.draw++;
+         // 	return supper();
+         // });
+
+         //   , _start    = engine.start
+         //   , _stop     = engine.stop
+         //   , _draw     = engine.layout.draw
+         //   ;
+
+         // engine.start = function(){ 
+         //    execCount.start++;
+         //    return _start.apply( this, arguments );
+         // }
+         // engine.stop = function(){ 
+         //    execCount.stop++;
+         //    return _stop.apply( this, arguments );
+         // }
+         // engine.layout.draw = function(){
+         //    execCount.draw++;
+         //    return _draw.apply( this, arguments );            
+         // }
+
+        // Benchmark.js test suite
+	    // ========================
+
+		function populateDots( total ){
+			var i = total;
+	        while(i--){
+	          dots.push( new Dot() );
+	        }
+		};
+
+		var suites = window.suites = { };
+
+		!function renderableClear( suite ){
+
+			var total = 100;
+
+			// add tests
+			suite.add({
+				name: 'clear#removeChild'
+			  , fn: function() {
+			        populateDots( total );
+		          	while( dots.length > 1 ){ dots.removeChild( dots[dots.length-1] ); }
+		          	return true;
+	          }
+			})
+
+			.add({
+				name: 'clear#shift'
+			  , fn: function(){
+			        populateDots( total );
+			  		while( dots.length > 1 ){ Array.prototype.shift.call( dots ); }
+			  		return true;
+			  }
+			  , onError: function(){
+			  	 console.log(arguments);
+			  }
+			})
+
+			.add({
+				name: 'clear#splice'
+			  , fn: function(){
+			        populateDots( total );
+			  		Array.prototype.splice.call( dots, 1, dots.length );
+			  		return true;
+			  }
+			  , onError: function(){
+			  	 console.log(arguments);
+			  }
+			})
+
+			// add listeners
+			.on('cycle', function(event) {
+			  console.log(String(event.target));
+			})
+
+			.on('complete', function() {
+			  console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+			})
+		
+		}( suites.clear = new Benchmark.Suite );
+
+		!function drawTests( suite ){
+
+			var limit = 0
+			  , testCycles = 100
+			;
+
+			function testGlitzJS(){ 		  		
+				console.log(limit+' glitz.js Renderables');
+				Array.prototype.splice.call( dots, 0, dots.length );
+				populateDots( limit );
+				var timers = [];
+				var count = testCycles;
+				instrument( engine, 'start', function( sup ){
+					timers.push(new Date().getTime());
+					return sup();
+				});
+				instrument( engine, 'stop', function( sup ){
+					sup();
+					timers[timers.length-1] = new Date().getTime() - timers[timers.length-1];
+					if( count-- ){
+				  		Array.prototype.splice.call( dots, 0, dots.length );
+						populateDots( limit );
+						engine.dirty();
+					}
+					else {
+						engine.stop.fix();
+						engine.start.fix();
+						report( timers );
+					}
+					return true;
+				});
+				engine.dirty();
+			};
+
+			function testUltralight(){
+				console.log(limit+' testUltralight');
+				var count = testCycles;
+				var timers = [];
+				var ctx = engine.ctx;
+				!function draw(){
+				  timers.push(new Date().getTime());
+				  setTimeout(function(){
+					  ctx.closePath();
+					  ctx.fillStyle = '#333';
+					  ctx.fillRect( 0, 0, engine.canvas.width, engine.canvas.height );
+					  ctx.fillStyle = '#ff0';
+					  for( var i = 0; i<limit; i++ ){
+					  	  ctx.save();
+					  	  ctx.translate( parseInt( Math.random() * engine.canvas.width ), parseInt( Math.random() * engine.canvas.height ));
+			              ctx.fillRect(0,0,1,1);
+			          	  ctx.restore();
+					  }
+					  timers[timers.length-1] = new Date().getTime() - timers[timers.length-1];
+					  if( count-- ) draw();
+					  else report( timers );
+				  }, engine.FPS );
+				}();
+			};
+
+			var tests = [];
+
+			function next(){
+				if( tests.length ) tests.shift()();
+			}
+
+			function report( timers ){
+				var sum = 0;
+				var i = timers.length;
+				while( i-- ){
+					sum += timers[i];
+				}
+				console.log( [ testCycles + ' cycles: '
+						   ,  Math.round( sum/timers.length )
+						   , 'ms average : '
+						   ,  Math.round( 1000 / (sum/timers.length) )
+						   , 'fps'
+						   // ,  Math.round( engine.FPS )
+						   // , 'ms per frame ) '
+						   // ,  Math.round((sum/timers.length)-engine.FPS)
+						   // , 'ms lag'
+						   ].join('') );
+				next();
+			}
+
+			suite.run = function( totalPoints, totalCycles ){
+				limit = totalPoints;
+				testCycles = totalCycles;
+				tests = [ testGlitzJS, testUltralight ]
+				next();
+			};
+
+		}( suites.draw = new Benchmark.Suite );
+
+		// run async
+		// .run({ 'async': false });
+
+      }();
+    </script>
+  </body>
+</html>
