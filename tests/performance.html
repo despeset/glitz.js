@@ -75,12 +75,9 @@
 
          // Renderables
          // ========================
-         var Dot = function(){ 
-          return new glitz.Renderable({
-            x: parseInt( Math.random() * engine.canvas.width )
-          , y: parseInt( Math.random() * engine.canvas.height )
+         var Dot = new glitz.Renderable({
           // , rot: parseInt( Math.random() * 360 ) * Math.PI / 180
-          , render: function( ctx ){
+          render: function( ctx ){
               // ctx.rotate(this.rot);
               // ctx.lineTo(2,0);
               // ctx.lineTo(2,2);
@@ -89,14 +86,13 @@
               ctx.fillRect(0,0,1,1);
           	  // ctx.closePath();
             }
-          })
-         };
+          });
 
-         var dots = window.dots = new glitz.Renderable({
+         var dots = window.dots = new ( new glitz.Renderable({
           render: function( ctx ){
             ctx.fillStyle = '#f99';
           }
-         });
+         }) )();
 
          engine.push( dots );
 
@@ -148,7 +144,10 @@
 		function populateDots( total ){
 			var i = total;
 	        while(i--){
-	          dots.push( new Dot() );
+	          dots.push( new Dot({
+  	            x: parseInt( Math.random() * engine.canvas.width )
+	          , y: parseInt( Math.random() * engine.canvas.height )
+	          }) );
 	        }
 		};
 
@@ -205,7 +204,7 @@
 
 		!function drawTests( suite ){
 
-			var limit = 0
+			var limit = 100
 			  , testCycles = 100
 			;
 
@@ -298,6 +297,8 @@
 
 		// run async
 		// .run({ 'async': false });
+
+		suites.draw.run( 1000, 100 );
 
       }();
     </script>
