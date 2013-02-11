@@ -65,28 +65,17 @@
          // Define renderable subclasses
          // =========================================
 
-         var renderables = {
-            /**
-             * Picture loading renderable.
-             **/
-            Pic: function(src, onload, state){
-
-              var pic = new glitz.Renderable({
-                render: function(ctx){
-                  var pic = this;
-                  var scale = pic.scale;
-                  normalizeSize();
-                  pic.engine.ctx.translate(pic.x+pic.width*0.5,pic.y+pic.height*0.5);
-                  var lw = pic.engine.ctx.lineWidth = 1/pic.engine.layout.scale;
-                  pic.engine.ctx.drawImage(pic.img,0-(pic.width*0.5),0-(pic.height*0.5),pic.width,pic.height);
-                }
-              });
-
-              function imgLoaded(){
-                normalizeSize();
-              };
-
-              function normalizeSize(){
+         var Picture = new glitz.Renderable({
+            render: function(ctx){
+              var pic = this;
+              var scale = pic.scale;
+              this.normalizeSize();
+              pic.engine.ctx.translate(pic.x+pic.width*0.5,pic.y+pic.height*0.5);
+              var lw = pic.engine.ctx.lineWidth = 1/pic.engine.layout.scale;
+              pic.engine.ctx.drawImage(pic.img,0-(pic.width*0.5),0-(pic.height*0.5),pic.width,pic.height);
+            },
+            normalizeSize: function(){
+                var pic = this;
                 if(!pic.size.w && !pic.size.h){
                   pic.width = pic.img.width;
                   pic.height = pic.img.height;
@@ -99,6 +88,32 @@
                   pic.width = pic.img.width * 1/(pic.img.height / pic.size.h);
                   pic.height = pic.size.h;
                 }
+              }
+          });
+
+         var MoonSphere = new glitz.Renderable({
+             render: function( ctx ){
+               var last = ctx.globalCompositeOperation;
+               ctx.globalCompositeOperation = this.blending;
+               ctx.fillStyle = this.grad;
+               ctx.beginPath();
+               ctx.arc(100,100,100,100,360);
+               ctx.fill();
+               ctx.closePath();
+               ctx.globalCompositeOperation = last;
+             }
+          });
+
+         var renderables = {
+            /**
+             * Picture loading renderable.
+             **/
+            Pic: function(src, onload, state){
+
+              var pic = new Picture();
+
+              function imgLoaded(){
+                pic.normalizeSize();
               };
 
               // load the image
@@ -127,23 +142,15 @@
             , Moon: function(colorStops,blend){
 
                 var grad = engine.ctx.createLinearGradient(0,0,0,250);
+
                 loop(colorStops, function(stop){
                   grad.addColorStop(stop[0],stop[1]);
                 });
 
-                return new glitz.Renderable({
+                return new MoonSphere({
                    blending: blend || 'source-over',
-                   render: function( ctx ){
-                     var last = ctx.globalCompositeOperation;
-                     ctx.globalCompositeOperation = this.blending;
-                     ctx.fillStyle = grad;
-                     ctx.beginPath();
-                     ctx.arc(100,100,100,100,360);
-                     ctx.fill();
-                     ctx.closePath();
-                     ctx.globalCompositeOperation = last;
-                   }
-                 });
+                   grad: grad,
+                });
               }
             };
 
@@ -166,7 +173,7 @@
 
             var moonOpacity = 0.25;
             
-            var moons = new glitz.Renderable({});
+            var moons = new ( glitz.Renderable() )();
             moons.push(new renderables.Moon([[0,'rgba(0,0,0,'+moonOpacity+')'],[0.5,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+moonOpacity+')']],'darker'));
 
             moons.push(new renderables.Moon([[0,'rgba(255,255,255,'+moonOpacity+')'],[0.5,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,'+moonOpacity+')']],'lighter'));

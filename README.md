@@ -9,8 +9,8 @@
 
 * **Pretty Small.**
 
- Minified, `glitz.js` weighs in at `<9KB ( <3KB gzip )`.  Even so, a quarter of 
- that size is the 30 built-in easing algorithms.  Where maximum thinness is required, remove any unused easing equasions.
+ Minified, `glitz.js` weighs in at `9.5KB ( 3.1KB gzip )`.  A quarter of 
+ that size is the 30 built-in easing algorithms, so when maximum thinness is required remove any unused easing equasions.
 
 * **Well mannered.**
 
@@ -50,49 +50,48 @@ glitz.Engine
 glitz.Renderable
 =========
 
-  `glitz.Renderable` is a base class for any kind of drawable object.  Just give it a set of properties, and a `render` method.
+  `glitz.Renderable` is a factory that builds your drawable objects.  Just give it a set of class properties that includes a `render` method.
   
-      var square = new glitz.Renderable({
-          height: 100
-        , width:  100
-        , color: '#0f0'
-        , render: function( ctx ){
+      var Square = new glitz.Renderable({
+        render: function( ctx ){
             ctx.fillStyle = this.color;
             ctx.fillRect( 0, 0, this.width, this.height );
         }
       });
     
-  Then add it to the engine's layout
+  Then create an instance and add it to the engine's layout
+
+      var square = new Square({          
+          height: 100
+        , width:  100
+        , color: '#0f0'
+      });
 
       engine.layout.push( square );
     
   This means that `square` is now a child of the `layout` `Renderable`. All `Renderables` can have children
   
-      var triangle = new glitz.Renderable({
+      var childSquare = new Square({
           height: 100
         , width:  100
         , color: '#0f0'
-        , render: function( ctx ){
-            ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.moveTo( 0, this.height );
-            ctx.lineTo( this.width, this.height );
-            ctx.lineTo( this.width * .5, 0 );
-            ctx.lineTo( 0, this.height );
-            ctx.fill();
-            ctx.closePath();
-        }
       });
-      square.push( triangle );
+      square.push( childSquare );
 
-  In this capacity, `Renderables` act just like `Array`. Walking the tree is easy.
+  `Renderables` subclass `Array` internally. Walking the tree is easy.
   
       square.length;        // 1
-      square[0];            // triangle
-      engine.layout[0][0];  // triangle
+      square[0];            // child square
+      engine.layout[0][0];  // child square
       triangle.parent;      // square
       square.parent;        // layout
       square.engine;        // engine
+
+  Each `Renderable` class includes it's own private `Array` which can be extended dynamically.
+
+      Square.Array.prototype.foo = function(){ return 'bar' }
+      square.foo()          // bar
+      square[0].foo()       // bar
 
 glitz.Animation
 =========

@@ -1,6 +1,6 @@
 /*****************************************************************************************
 
-     glitz.js 0.1.5 - Javascript canvas animation micro-framework  
+     glitz.js 0.2 - Javascript canvas animation micro-framework  
      http://github.com/danielmendel/glitz.js
 
      Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         
@@ -219,27 +219,6 @@
      **/
 
     var Animation = makeClass()
-
-    /**
-     *  `renderables` are the objects that get drawn *and* an array-like collection of child `renderables`
-     *  @class 
-     *  @name Renderable
-     *  @constructor
-     **/
-
-    var Renderable = makeClass()
-
-    /**
-     *  `engines` interface with individual `<canvas>` elements, run the animation loop and trigger `renderable.draw`
-     *  @class 
-     *  @name Engine
-     *  @constructor
-     **/
-
-    var Engine = makeClass()
-     
-    scope.animations = []; // HMM... for debugging?
-        
     Animation.prototype = {
 
       /**
@@ -268,7 +247,7 @@
        *  @type {string}
        **/
 
-      easing: 'easeOutQuad',
+      easing: glitz.config.defaultEasing,
 
       /**
        *  The total duration in milliseconds
@@ -339,8 +318,6 @@
         tkvDeepCopy( animation.from, animation.to, renderable )
         parseAnimationDSL( animation.to, animation.from )
                 
-        scope.animations.push( animation )
-
         return this
 
       },
@@ -452,8 +429,14 @@
       
       }
     }
-    
-    Renderable.prototype = {
+    /**
+     *  `renderables` are the objects that get drawn *and* an array-like collection of child `renderables`
+     *  @class 
+     *  @name Renderable
+     *  @constructor
+     **/
+
+    var renderableCore = {
 
       /**
        *  x position in pixels
@@ -481,13 +464,6 @@
        **/
 
       engine: null,
-
-      /**
-       *  Just like `Array.length`
-       *  @type {number}
-       **/
-
-      length: 0,
 
       /**
        *  Index of this renderable in parent
@@ -629,7 +605,7 @@
           conf = {
               duration: opts.duration || 250
             , done: opts.done || function(){ }
-            , easing: opts.easing || 'easeOutQuad'
+            , easing: opts.easing || glitz.config.defaultEasing
           }
         }              
         
@@ -675,9 +651,67 @@
         ctx.restore()
 
       }
+    }
 
+    function Renderable( classProps ){
+        // generate our temporary global transport key
+        var key = '___glitzBorrowedArray';
+        // collision protection
+        while( window.hasOwnProperty(key) ){
+            key = '___glitzBorrowedArray' + Math.floor( 100 + Math.random() * 200 ) + new Date().getTime()
+        }
+        // inject iframe & assign Array to our transport key in this window.
+        var iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            document.body.appendChild(iframe);
+            frames[frames.length - 1].document.write(
+              "<script>parent."+key+" = Array;<\/script>"
+            );
+        // store the new Array prototype
+        var privateArray = window[key];
+        // clean the global namespace
+        delete window[key];
+        // extend the imported `Array` prototype with the core `Renderable` mixin
+        for( k in renderableCore ){
+            if( renderableCore.hasOwnProperty(k) )
+                privateArray.prototype[k] = renderableCore[k];
+        }
+        // extend the imported `Array` prototype with the classProps passed to `Renderable`
+        for( k in classProps ){
+            if( classProps.hasOwnProperty(k) )
+                privateArray.prototype[k] = classProps[k];
+        }
+        // build a `Factory` for instantiating instances of our new `Renderable` Class.
+        function Factory( instanceProps ){
+            var children = [];
+            var arr = new privateArray();
+            var i = 1;
+            while(i++<arguments.length){
+                arr.push(arguments[i]);
+            }
+            if( !arguments.length )
+              return arr
+            // `direct extension` for all properties passed to the factory when instantiating.
+            for( k in instanceProps ){
+                if( instanceProps.hasOwnProperty(k) )
+                    arr[k] = instanceProps[k];
+            }
+            // return our Renderable instance! Super fast & fully inherits the behavior of Array!
+            return arr;
+        }
+        // make the internal array available for prorotype extension later
+        Factory.Array = privateArray;
+        return Factory;
     }
     
+    /**
+     *  `engines` interface with individual `<canvas>` elements, run the animation loop and trigger `renderable.draw`
+     *  @class 
+     *  @name Engine
+     *  @constructor
+     **/
+
+    var Engine = makeClass()
     Engine.prototype = {
       
       /**
@@ -742,7 +776,7 @@
         engine.canvas = typeof window.jQuery !== 'undefined' ? jQuery(canvasElement)[0] : canvasElement
         engine.ctx = engine.canvas.getContext('2d')
         
-        engine.layout = new Renderable({
+        engine.layout = new ( Renderable({
           engine: engine,
           width: engine.canvas.width,
           height: engine.canvas.height,
@@ -759,7 +793,7 @@
             ctx.translate( this.x, this.y )
             ctx.scale( this.scale, this.scale )
           }
-        })
+        }) )
 
         /**
          *  requestAnimationFrame play & pause control
@@ -1061,6 +1095,6 @@
 
     // Write to the namespace
 
-    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2' }
+    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2', config: { defaultEasing: 'easeOutQuad' } }
     
 }(window);
