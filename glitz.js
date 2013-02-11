@@ -55,6 +55,9 @@
      * Private Utility Functions
      * ================================================================================= */
 
+    // config vars, grafted onto the glitz namespace later
+    var config = { defaultEasing: 'easeOutQuad' };
+
     /**
     *  alias hasOwnProperty
     *  @type {function}
@@ -247,7 +250,7 @@
        *  @type {string}
        **/
 
-      easing: glitz.config.defaultEasing,
+      easing: config.defaultEasing,
 
       /**
        *  The total duration in milliseconds
@@ -1095,6 +1098,6 @@
 
     // Write to the namespace
 
-    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2', config: { defaultEasing: 'easeOutQuad' } }
+    scope.glitz = { Animation: Animation, Renderable: Renderable, Engine: Engine, version: '0.1.2', config: config }
     
 }(window);
