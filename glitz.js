@@ -822,7 +822,7 @@
             reqAnimFrameTimer = -1
             engine.stop()
           }, 100)
-          webkitRequestAnimationFrame(playOnFrame)
+          requestAnimationFrame(playOnFrame)
         })
         
       },
