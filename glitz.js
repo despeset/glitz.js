@@ -56,7 +56,7 @@
      * ================================================================================= */
 
     // config vars, grafted onto the glitz namespace later
-    var config = { defaultEasing: 'easeOutQuad' };
+    var config = { defaultEasing: 'easeOutQuad' }
 
     /**
     *  alias hasOwnProperty
@@ -64,7 +64,7 @@
     *  @private
     */
 
-     var hasOwn = Object.prototype.hasOwnProperty
+      , hasOwn = Object.prototype.hasOwnProperty
 
     /**
      *  makeClass - By John Resig (MIT Licensed) 
@@ -480,7 +480,7 @@
        *  @type {?Animation}
        **/
       
-      animation: false,
+      animations: [],
       
       /**
        *  Construct the `renderable`, shallow merge extension and `renderable`
@@ -638,7 +638,7 @@
 
         var renderable = this
           , ctx = ctx || renderable.engine.ctx
-          , animation = renderable.animation
+          , animations = renderable.animations
         
         
         ctx.save()
