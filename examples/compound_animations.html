@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <title>glitz.js example | compound animations</title>
+    <style>
+      html, body {
+        width:  100%;
+        height: 100%;    
+        padding: 0;
+        margin: 0;    
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay">
+      
+    </div>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript" src="../glitz.js"></script>
+    <script type="text/javascript">
+      (function(){
+
+        // Utilities
+        //==========================
+
+         function getDocHeight() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+                 Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+                 Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+             );
+         };
+ 
+         function getDocWidth() {
+             var D = document;
+             return Math.max(
+                 Math.max(D.body.scrollWidth, D.documentElement.scrollWidth),
+                 Math.max(D.body.offsetWidth, D.documentElement.offsetWidth),
+                 Math.max(D.body.clientWidth, D.documentElement.clientWidth)
+             );
+         };
+
+         // Init glitz engine
+         //=========================
+
+         var engine = window.engine = new glitz.Engine(document.getElementById('canvas'));
+         engine.setSize(getDocWidth(), getDocHeight()-5);
+         engine.layout.backgroundColor = '#111';
+        
+         // Define simple renderable
+         //=========================
+         var Dot = new glitz.Renderable({
+         	color: 'rgba(255,0,0,1)'
+		  , render: function( ctx ){
+		  		ctx.closePath();
+		  		ctx.beginPath();
+	         	ctx.fillStyle = this.color
+         		ctx.arc(0,0,10,0,2*Math.PI);
+                ctx.fill();
+         	}
+         });
+
+         // add our new renderable
+         var dot = new Dot({ x: 20, y : 20 });
+         engine.push( dot );
+        
+         // define some animation routines
+         var zig = { to: { x: '+150' }, duration: 500 }
+         var zag = { to: { y: '+150'}, duration: 800 }
+
+         // including a function that returns a randomized animation routine
+         var colorize = function(){
+            return { to: { color: ['rgba(' + Math.round(Math.random()*255),Math.round(Math.random()*255),Math.round(Math.random()*255),'1)'].join(',') }, duration: 700 }
+         }
+         
+         // compose animation routines in series & parallel
+         !function loop(){
+	         dot.animate([ zig
+                         , zag
+                         , colorize()
+	         			 , [ zig, zag, colorize() ] 
+	         			 , [ [ zig, zag ], colorize() ]
+                         , [ zig, [ zag, colorize() ] ]
+	         			 , [ { to: { x: 20 }, duration: 800, done: loop }, { to: { y: 20 }, duration: 700 } ]
+	         			 ]);
+         }();
+
+      })();
+
+    </script>
+  </body>
+</html>

@@ -9,7 +9,7 @@
 
 * **Pretty Small.**
 
- Minified, `glitz.js` weighs in at `9.5KB ( 3.1KB gzip )`.  A quarter of 
+ Minified, `glitz.js` weighs in at `10.4KB ( 3.3KB gzip )`.  A quarter of 
  that size is the 30 built-in easing algorithms, so when maximum thinness is required remove any unused easing equasions.
 
 * **Well mannered.**
@@ -96,39 +96,54 @@ glitz.Renderable
 glitz.Animation
 =========
 
-  `glitz.Animation` instances are not usually created explicitly, but instead are handled under the hood by `renderable.animate`
-  
-      square.animate({ height: 50 }, 750 );
+  `glitz.Animation` instances are not usually created explicitly, but instead are handled under the hood by `renderable.animate.`  
 
   In addition to any custom properties, `Renderables` expose the spacial components `x`, `y,` and `scale`, all of which are applied as `transformations` to the `engine.ctx` matrix before `renerable.render`, affecting all descendent renderables.
 
-      square.animate({ x: 10, y: 25, scale: 0.8 }, 500 );
+  If you've used `jQuery.animate` then the basic animate calls should be familiar, all of the following are equivalent:
+
+  ``` javascript
+    // transform ( duration defaults to 250ms )
+    box.animate({ x: 100 });
+    // transform, duration
+    box.animate({ x: 100 }, 5000 );
+    // transform, callback
+    box.animate({ x: 100 }, function(){ ... });
+    // transform, duration, callback
+    box.animate({ x: 100 }, 5000, function(){ ... });
+    // transform, options
+    box.animate({ x: 100 }, { duration: 5000, done: function(){ ... }});
+    // single config object
+    box.animate({ to: { x: 100 }, duration: 5000, done: function(){ ... }});
+  ```
       
   You can also animate properties with relative transformations
   
-      square.animate({ x: '+10', y: '-10' }, 500 );
+      square.animate({ to: { x: '+10', y: '-10' }, duration: 500 });
       
   `Animation` has access to 30 built-in easing equations ported from Robert Penner's [`Easing Equations Library for ActionScript`](http://www.robertpenner.com/easing/)
 
-      square.animate({ width: '+50' }, { easing: 'easeInOutBounce', duration: 750 });
+      square.animate({ to: { width: '+50' }, easing: 'easeInOutBounce', duration: 750 });
   
   and can tween colors
   
-      square.animate({ color: '#00f' }, 1500 );
-      triangle.animate({ color: 'rgba(150,200,100,0.8)' }, 750 );
-
-  Right now, animations are not automatically queued and cannot be run in parallel on a single `renderable` --
-  each call to `renderable.animate` will cancel any running `Animation` and start the new one immediately.
-  Instead, pass a callback as the third parameter or as an option:
+      square.animate({ to: { color: '#00f' }, duration: 1500 });
+      triangle.animate({ to: { color: 'rgba(150,200,100,0.8)' }, duration: 750 });
   
-      square.animate({ width: '-25' }, 500, function(){
-        // or as an option
-        triangle.animate({ height: '+25' }, { duration: 500, done: function(){ 
-          // done!
-        }});
-      });
-      
-  Finally, `glitz.Animation` can be used independantly to animate the properties of any object.  The target object properties are set every time `animation.step` is called.
+  Each call to `renderable.animate` will cancel any running `Animation` and start the new one immediately.
+  If you pass `renderable.animate` an Array of animation config objects it will run them in series:
+
+      square.animate([ { to: { x: '+100' } }, { to: { y: '+100' } } ]);
+
+  If that array contains an array, those animations will be run in parallel:
+
+      square.animate([[ { to: { x: '+100' } }, { to: { y: '+100' } } ]]);
+
+  If parallel animations contain an array, they will be run a series, and so on to any depth
+
+      square.animate([[ { to: { x: '+100' } }, { to: { y: '+100' } }, [ { to: { height: 100 }, duration: 100 }, { to: { width: 100 }, duration: 100 }]]]);
+
+  Finally, the `glitz.Animation` class can be used independantly to animate the properties of any object.  The target object properties are set every time `animation.step` is called.
   
       var foo = { bar: 0 };
       var anim = new glitz.Animation( foo, { to: { bar: '+50' }, duration: 1500 });

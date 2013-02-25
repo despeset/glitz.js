@@ -1,6 +1,6 @@
 /*****************************************************************************************
 
-     glitz.js 0.2 - Javascript canvas animation micro-framework  
+     glitz.js 0.3 - Javascript canvas animation micro-framework  
      http://github.com/danielmendel/glitz.js
 
      Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         
@@ -118,6 +118,27 @@
         if( hasOwn.call( obj, attr ) )
           fn.call( obj, attr)
       }
+    }
+
+    /**
+     *  Recursively copy arrays of objects & arrays, for animation series & parallel sets
+     *
+     *  @param {Object|Array}
+     *  @private
+     *
+     **/
+
+    function copyDeep( a ){
+      if( a instanceof Array ){
+        var b = []
+        each( a, function(o){
+          b.push( copyDeep(o) )
+        })
+      } else {
+        var b = {}
+        eachProp( a, function(k){ b[k] = typeof a[k] !== 'object' ? a[k] : copyDeep( a[k] ) })
+      }
+      return b
     }
 
     /**
@@ -581,6 +602,71 @@
       },
       
       /**
+       *  Execute an animation series.  Arrays found in `series` will be run in parallel.
+       *  Deligated to by `animate` and `animateParallel`
+       *
+       *  @param {array} animation config objects
+       *
+       **/
+
+      animateSeries: function( series ){
+        if( !series.length ) return false
+
+        var that = this
+          , anim = series.shift()
+          , _done = anim.done
+
+        if( anim instanceof Array )
+          return that.animateParallel( anim, function(){
+            that.animateSeries( series )
+          })
+
+        anim.done = function() {
+          that.animateSeries( series )
+          if( _done ) _done.call( this )
+        }
+
+        return that.animations.push( new Animation( that, anim ) )
+      }
+
+      /**
+       *  Execute parallel animations.  Arrays found in `parallel` will be run in series.
+       *  Deligated to by `animate` and `animateSeries`
+       *
+       *  @param {array} animation config objects
+       *
+       **/
+
+      , animateParallel: function( parallel, done ){ 
+        var that = this
+
+        parallel.sort(function(a,b){ return a.duration < b.duration })
+
+        // deep search longest
+        var longest = { duration: 0 }
+        !function getLongest( set ){
+          each( set, function( anim ){
+            if( anim instanceof Array ) return getLongest( anim )
+            longest = anim.duration > longest.duration ? anim : longest
+          })
+        }( parallel )
+
+        var _done = longest.done
+        longest.done = function(){
+          done.call( this )
+          if( _done ) _done.call( this )
+        }
+
+        each( parallel, function( anim, i ){
+          if( anim instanceof Array )
+            return that.animateSeries( anim, done )
+          that.animations.push( new Animation( that, anim ) )
+        })
+
+        return true
+      }
+      
+      /**
        *  Create a new Animation for this Renderable:
        *
        *    `renderable.animate({ x: '+100' });`
@@ -589,17 +675,32 @@
        *    `renderable.animate({ background: 'rgba(255,0,0,1)' }, 1500, function(){ alert( 'done!' ); });`
        *    `renderable.animate({ scale: 2.5, color: '#f00' }, { duration: 1500, easing: 'easeInOutBack', done: function(){ alert( 'done!' ) } });`
        *
-       *  @param {object}
+       *  Create animation series:
+       *    `renderable.animate([{ x: 100 }, { y: 100 }]);`
+       *
+       *  Create parallel animations:
+       *    `renderable.animate([[{ to: { x: 100 }}, { to: { y: 100 }}]]);`
+       *  
+       *  Combine the two:
+       *    `renderable.animate([{ to: { x: 100 }}, [ { to: { x: 0 }}, { to: { y: 100 }}]]);`
+       *
+       *  The first array level is a series.
+       *  Arrays found in a series are run in parallel. 
+       *  Arrays found in parallel animations are run as series.
+       *
+       *  @param {object|array}
        *  @param {?(object|number|function)}
        *  @param {?function}
        *
        **/
 
-      animate: function( to, opts, done ){
+      , animate: function( to, opts, done ){
+        var conf = {}
         
-        var now = new Date().getTime()
-          , conf = {}
-        
+        this.animations.length = 0
+
+        if( to instanceof Array )
+          return this.animateSeries( copyDeep( to ) )
         
         if( typeof opts === 'number' ){ // opts is duration
           conf.duration = opts
@@ -621,8 +722,8 @@
         }
                 
         conf.to = to
-        delete this.animation
-        this.animation = new Animation( this, conf )
+
+        this.animations.push( new Animation( this, conf ) )
       
       },
       
@@ -643,7 +744,19 @@
         
         ctx.save()
 
-        if( animation && !animation.finished ) animation.step()
+        var clean = []
+
+        if( animations.length ){
+            each( animations, function( animation, i ){ 
+              if( !animation.finished ) animation.step()
+              else clean.push(i)
+            })
+        }
+
+        each( clean.reverse(), function(i){
+          animations.splice(i,1)
+        })
+
         renderable.setup( ctx )
         renderable.render( ctx )
         
@@ -692,6 +805,8 @@
             while(i++<arguments.length){
                 arr.push(arguments[i]);
             }
+            // instantiate the animations array.
+            arr.animations = [];
             if( !arguments.length )
               return arr
             // `direct extension` for all properties passed to the factory when instantiating.
