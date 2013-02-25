@@ -97,9 +97,9 @@
      **/
      
     function each( arr, fn ){
-        var i = 0, u = arr && arr.length ? arr.length : arr, r
+        var i = 0, u = arr && arr.length ? arr.length : arr, r, num = typeof arr === 'number'
         for( i=0 ; i<u ; i++ ){
-          r = fn( typeof arr === 'number' ? i : arr[i] )
+          r = fn( num ? i : arr[i], i )
           if( !( typeof r === 'undefined' ? true : r) ) break
         }
     }
