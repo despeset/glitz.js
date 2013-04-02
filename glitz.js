@@ -585,7 +585,7 @@
       removeChild: function( removingChild ){
         Array.prototype.splice.call( this, removingChild._id, 1)
         each(this,function( child ){ 
-          if(child._id > removingChild._id) child._id++
+          if(child._id > removingChild._id) child._id--
         })
       },
       
