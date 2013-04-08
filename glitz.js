@@ -807,6 +807,7 @@
             }
             // instantiate the animations array.
             arr.animations = [];
+            arr.init && arr.init()
             if( !arguments.length )
               return arr
             // `direct extension` for all properties passed to the factory when instantiating.
