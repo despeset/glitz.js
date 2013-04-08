@@ -1052,6 +1052,27 @@
         } 
       },
 
+      /**
+       *  Get all the renderables of a given type from the layout.
+       *
+       *  Pass the Factory returned by glitz.Renderable to `filter` to
+       *  retrieve a set of all instances of that factory regardless of heirarchy.
+       *
+       *      var Box = glitz.Renderable({ ... });
+       *      engine.push( new Box({ ... }) );
+       *      engine.filter( Box ); // => [ box, box, box, ... ]
+       *
+       *  Optionally pass a specific renderable to filter only from it's children.
+       *
+       *      engine.filter( Box, engine.layout ); // default behavior
+       *
+       *  Called recursively, the third argument should probably only be used internally.
+       *
+       *  @param {Factory}    The type to filter for
+       *  @param {Renderable} Specific renderable to check inside of ( optional )
+       *  @param {Array}      The Array to push matched elements into ( optional )
+       **/
+
       filter: function filter( RenderableFactory, renderable, setArr ){
         var set = setArr || []
           , ren = renderable || this.layout
