@@ -771,56 +771,56 @@
 
     function Renderable( classProps ){
         // generate our temporary global transport key
-        var key = '___glitzBorrowedArray';
+        var key = '___glitzBorrowedArray'
         // collision protection
         while( window.hasOwnProperty(key) ){
             key = '___glitzBorrowedArray' + Math.floor( 100 + Math.random() * 200 ) + new Date().getTime()
         }
         // inject iframe & assign Array to our transport key in this window.
-        var iframe = document.createElement("iframe");
-            iframe.style.display = "none";
-            document.body.appendChild(iframe);
-            frames[frames.length - 1].document.write(
-              "<script>parent."+key+" = Array;<\/script>"
-            );
+        var iframe = document.createElement("iframe")
+        iframe.style.display = "none"
+        document.body.appendChild(iframe)
+        frames[frames.length - 1].document.write(
+            "<script>parent."+key+" = Array;<\/script>"
+        )
         // store the new Array prototype
-        var privateArray = window[key];
+        var privateArray = window[key]
         // clean the global namespace
-        delete window[key];
+        delete window[key]
         // extend the imported `Array` prototype with the core `Renderable` mixin
         for( k in renderableCore ){
             if( renderableCore.hasOwnProperty(k) )
-                privateArray.prototype[k] = renderableCore[k];
+                privateArray.prototype[k] = renderableCore[k]
         }
         // extend the imported `Array` prototype with the classProps passed to `Renderable`
         for( k in classProps ){
             if( classProps.hasOwnProperty(k) )
-                privateArray.prototype[k] = classProps[k];
+                privateArray.prototype[k] = classProps[k]
         }
         // build a `Factory` for instantiating instances of our new `Renderable` Class.
         function Factory( instanceProps ){
-            var children = [];
-            var arr = new privateArray();
-            var i = 1;
+            var children = []
+            var arr = new privateArray()
+            var i = 1
             while(i++<arguments.length){
-                arr.push(arguments[i]);
+                arr.push(arguments[i])
             }
             // instantiate the animations array.
-            arr.animations = [];
+            arr.animations = []
             arr.init && arr.init()
             if( !arguments.length )
               return arr
             // `direct extension` for all properties passed to the factory when instantiating.
             for( k in instanceProps ){
                 if( instanceProps.hasOwnProperty(k) )
-                    arr[k] = instanceProps[k];
+                    arr[k] = instanceProps[k]
             }
             // return our Renderable instance! Super fast & fully inherits the behavior of Array!
-            return arr;
+            return arr
         }
         // make the internal array available for prorotype extension later
-        Factory.Array = privateArray;
-        return Factory;
+        Factory.Array = privateArray
+        return Factory
     }
     
     /**
@@ -908,10 +908,10 @@
             // ...
           },
           setup: function( ctx ){
-            this.onLoop();
+            this.onLoop()
             ctx.fillStyle = this.backgroundColor
             if(this.clearFrames)
-              ctx.fillRect( -1, -1, this.width + 1, this.height + 1 ); // setup
+              ctx.fillRect( -1, -1, this.width + 1, this.height + 1 ) // setup
             this.background( ctx )
             ctx.translate( this.x, this.y )
             ctx.scale( this.scale, this.scale )
