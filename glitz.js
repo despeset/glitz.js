@@ -1050,8 +1050,21 @@
           this.stop()
           this.start()
         } 
+      },
+
+      filter: function filter( RenderableFactory, renderable, setArr ){
+        var set = setArr || []
+          , ren = renderable || this.layout
+        
+        if( ren.constructor === RenderableFactory.Array )
+          set.push(ren)
+        
+        for( var i=0, u=ren.length; i<u; i++ ){
+          filter( RenderableFactory, ren[i], set )
+        }
+
+        return set
       }
-    
     }
 
     /**
