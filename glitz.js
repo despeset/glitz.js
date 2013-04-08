@@ -770,12 +770,8 @@
     }
 
     function Renderable( classProps ){
-        // generate our temporary global transport key
-        var key = '___glitzBorrowedArray'
-        // collision protection
-        while( window.hasOwnProperty(key) ){
-            key = '___glitzBorrowedArray' + Math.floor( 100 + Math.random() * 200 ) + new Date().getTime()
-        }
+        // generate our temporary global transport key ( with collision protection )
+        do { var key = '___glitzBorrowedArray'+(+ new Date()) } while( window.hasOwnProperty(key) )
         // inject iframe & assign Array to our transport key in this window.
         var iframe = document.createElement("iframe")
         iframe.style.display = "none"
