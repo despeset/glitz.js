@@ -1,6 +1,6 @@
 {
   "name": "glitz",
-  "version": "0.3",
+  "version": "0.3.01",
   "description": "glitz.js is a small and fast animation framework for the html5 canvas tag",
   "main": "glitz.js",
   "directories": {

@@ -988,7 +988,7 @@
       },
 
       loop: function( onframe ){
-        this.layout.onLoop = onframe
+        this.layout.onLoop = onframe || this.layout.onLoop
         this.registerAnimation()
       },
       
