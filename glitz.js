@@ -1,6 +1,6 @@
 /*****************************************************************************************
 
-     glitz.js v0.3 - Javascript canvas animation micro-framework  
+     glitz.js v0.3.02 - Javascript canvas animation micro-framework  
      http://github.com/danielmendel/glitz.js
 
      Copyright (c) 2012 Daniel Mendel Espeset (http://danielmendel.com)         
@@ -442,14 +442,15 @@
             : ren[ attr ] = to[ attr ]
           })
         }( ren, to )
-        
+
+        animation.finished = true
+
         // trigger callback
         if( typeof animation.done === 'function' ) animation.done.call( ren, animation )
 
         // let the engine know we're done
-        hasOwn.call(ren, 'engine') ? ren.engine.unregisterAnimation() : 0 
         
-        return animation.finished = true
+        return ren.engine && ren.engine.unregisterAnimation()
       
       }
     }
@@ -697,6 +698,8 @@
       , animate: function( to, opts, done ){
         var conf = {}
         
+        var i = this.animations.length;
+        while( i-- ){ !this.animations[i].finished && this.engine.unregisterAnimation() }
         this.animations.length = 0
 
         if( to instanceof Array )
