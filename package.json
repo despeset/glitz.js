@@ -1,0 +1,33 @@
+{
+  "name": "glitz",
+  "version": "0.3",
+  "description": "glitz.js is a small and fast animation framework for the html5 canvas tag",
+  "main": "glitz.js",
+  "directories": {
+    "example": "examples",
+    "test": "tests"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-uglify": "~0.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/danielmendel/glitz.js.git"
+  },
+  "keywords": [
+    "canvas",
+    "animation",
+    "micro",
+    "fast",
+    "glitz"
+  ],
+  "author": "Daniel Mendel <daniel@danielespeset.com>",
+  "license": "BSD",
+  "gitHead": "5e0c5a9d07be6fc752f3c024b35dad7a7c14603c",
+  "readmeFilename": "README.md"
+}
